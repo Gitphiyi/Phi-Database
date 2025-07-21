@@ -6,3 +6,5 @@
 - I have attempted to tackle this project last summer with zero knowledge of systems, but now I have come back with a bit more experience. I think I will avoid the first three steps of Tokenizer, Parser, and Code Generator, and instead work on the Pager. I believe the Pager is the most core element of a database, and thus, I will naturally find the need for the other subsytems of a database.
 
 - My first goal for today is to create writes/reads/deletes to persistent storage.
+
+# Day 2 7/19/2025
