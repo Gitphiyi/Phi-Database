@@ -5,14 +5,14 @@
 #include <string>
 #include <memory>
 
-class Buffer {
+class PageCache {
     public:
-    Buffer();
-    ~Buffer();
+    PageCache();
+    ~PageCache();
     const int PAGE_SIZE;
     const int BUFFER_SIZE;
     const std::byte* buffer;
 
-    int read();
+    int read(); 
     int write_through(); // write through
 };
