@@ -1,7 +1,8 @@
 #pragma once
 
-#include <Types.hpp>
-#include <PageCache.hpp>
+#include "Types.hpp"
+#include "PageCache.hpp"
+#include "DbFile.hpp"
 #include <vector>
 #include <string>
 
@@ -25,21 +26,22 @@ struct Row {
 class Table {
     public:
         //initialize new Table
-        Table(const string& path, const std::vector<Column>& schema, PageCache& bufPool);
+        Table(const string& filepath, const Orientation type, const std::vector<Column>& schema, PageCache& cache);
 
         // initialize existing Table
-        Table(const string& path, PageCache& bufPool);
+        Table(const string& filepath, PageCache& bufPool);
 
         //return page number where row is placed. row byte size must equal schema
         u64           insert(const Row& row);
         bool          read(u64 pageNum, u16 rowNum, Row row);
 
     private:
-        Orientation         theOrientation;
-        string              theName;
+        const Orientation   theOrientation;
+        DbFile              theDbFile;
+        string              theFilepath;
         size_t              theRowSize;
-        std::vector<u64>    thePageNumbers;     
-        PageCache&          thePageCache;
+        std::vector<u64>    theFreePages;     
+        PageCache&          theCache;
 
         void loadSchema(); //read first page
         void writeHeader_(); // write schema & metadata to page 0

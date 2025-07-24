@@ -1,4 +1,4 @@
-#pragma once;
+#pragma once
 
 #include <cstddef>
 #include <cstdlib>
@@ -9,9 +9,9 @@ class PageCache {
     public:
     PageCache();
     ~PageCache();
-    const int PAGE_SIZE;
-    const int BUFFER_SIZE;
-    const std::byte* buffer;
+    int PAGE_SIZE;
+    int BUFFER_SIZE;
+    std::byte* buffer;
 
     int read(); 
     int write_through(); // write through
