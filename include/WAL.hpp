@@ -2,10 +2,11 @@
 
 #include "Types.hpp"
 
-class Logger {
+//Write Ahead Logger
+class WAL {
     public:
-        Logger();
-        ~Logger();
+        WAL(string tableName);
+        ~WAL();
         void    updateLog();
         
 
@@ -14,5 +15,5 @@ class Logger {
         string  theLogFile;
         int     theFd;
 
-        void    parseLog();
+        void    parseLog();  
 };
