@@ -1,10 +1,9 @@
-#include "../include/DbFile.hpp"
-#include "../include/Table.hpp"
-#include "../include/Database.hpp"
 #include <iostream>
+#include "DbFile.hpp"
 
 int main() {
     const char* filename = "hi.db";
+
     std::cout << " hi\n";
     return 1;
 }

@@ -1,5 +1,5 @@
-#include "../include/Table.hpp"
-#include "../include/Types.hpp"
+#include "Table.hpp"
+#include "../Types.hpp"
 #include "../include/DbFile.hpp"
 
 #include <sys/fcntl.h>

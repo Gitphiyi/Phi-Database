@@ -1,5 +1,5 @@
 cc_library(
-    name = "table",
+    name = "table_lib",
     srcs = ["table.cpp"],
     hdrs = ["table.hpp"],
     deps = [
