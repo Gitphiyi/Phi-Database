@@ -4,6 +4,7 @@ cc_library(
     hdrs = glob(["*.hpp"]),
     includes = [".",".."],         
     deps = [
+        "//src/DbFile:dbfile_lib"
         "//src:types_lib",
         "//src:page_lib",
     ],

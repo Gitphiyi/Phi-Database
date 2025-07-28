@@ -3,20 +3,25 @@
 #include <unordered_map>
 #include <stack>
 
+#include "DbFile/DbFile.hpp"
 #include "Page.hpp"
 
-class PageCache {
-    public:
-        const u64 BUFFER_SIZE;
-        const u32 NUM_PAGES;
-        PageCache(u32 numPages);
-        ~PageCache();
+namespace DB {
+    class PageCache {
+        public:
+            const u64 BUFFER_SIZE;
+            const u32 NUM_PAGES;
+            PageCache(u32 numPages, DbFile fileApi);
+            ~PageCache();
 
-        int read(); 
-        int write_through(); // write through
+            Page& read(u32 pageId); 
+            int write_through(); // write through
+            bool loadPageFromDisk(u32 pageId, Page& page);
 
-    private:
-        std::unordered_map<u32, Page*>      thePageMap;
-        std::stack<Page*>                   theFreePages;
-        Page*                               thePages; //array of pages to ensure pages are in memory
-};
+        private:
+            DbFile                              theDbFile;
+            std::unordered_map<u32, Page*>      thePageMap;
+            std::stack<Page*>                   theFreePages;
+            Page*                               thePages; //array of pages to ensure pages are in memory
+    };
+}

@@ -12,4 +12,6 @@ struct Page {
     u16         free_idx; //array index for next free byte          
     std::byte   data[PAGE_SIZE]; 
     Page(u32 id) : id(id), dirty_bit(false), ref_count(0), valid_bit(false) {}
+
+    void clear() { std::memset(data, 0, PAGE_SIZE); }
 };
