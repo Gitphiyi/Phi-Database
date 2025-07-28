@@ -1,6 +1,6 @@
 #include "Table.hpp"
 #include "../Types.hpp"
-#include "../include/DbFile.hpp"
+#include "DbFile.hpp"
 
 #include <sys/fcntl.h>
 

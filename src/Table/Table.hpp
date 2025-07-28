@@ -22,8 +22,7 @@ struct Column {
     bool        is_unique;
 
     Column(const string& name, DataType type, bool nullable = true,
-        bool primaryKey = false, bool unique = false,
-        DataType defaultVal = {}) : 
+        bool primaryKey = false, bool unique = false, DataType defaultVal = {}) : 
         name(name),
         type(type),
         nullable(nullable),
@@ -51,7 +50,7 @@ class Table {
 
     private:
         const Orientation       theOrientation;
-        DbFile                  theDbFile;
+        DB::DbFile              theDbFile;
         string                  theFilepath;
         size_t                  theRowSize;
         std::vector<u64>        theFreePages; 

@@ -2,6 +2,9 @@ cc_library(
     name = "phi_lib",
     deps = [
         "//src/DbFile:dbfile_lib",
+        "//src/Table:table_lib",
+        "//src/PageCache:pagecache_lib",
+
     ],
     visibility = ["//visibility:public"],
 )

@@ -1,9 +1,12 @@
 cc_library(
     name = "table_lib",
-    srcs = ["table.cpp"],
-    hdrs = ["table.hpp"],
+    srcs = glob(["*.cpp"]),        
+    hdrs = glob(["*.hpp"]),
+    includes = [".",".."],         
     deps = [
-        "//src/column:column",
+        "//src:types_lib",
+        "//src/DbFile:dbfile_lib",
+        "//src/PageCache:pagecache_lib"
     ],
     visibility = ["//visibility:public"],
 )
