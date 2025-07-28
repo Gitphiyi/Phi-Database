@@ -15,6 +15,14 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
+cc_library(
+    name = "page_lib",
+    hdrs = ["Page.hpp"],
+    deps = [":types_lib"]
+    visibility = ["//visibility:public"],
+)
+
+
 cc_binary(
     name = "startup",
     srcs = ["main.cpp"],

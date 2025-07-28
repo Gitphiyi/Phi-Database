@@ -1,12 +1,17 @@
+#include <unordered_map>
+#include <stack>
+
+#include "Page.hpp"
 #include "PageCache.hpp"
 
-PageCache::PageCache()  : 
-    PAGE_SIZE   (8  * 1024),         //  8 KB
-    BUFFER_SIZE(1000 * 1024),        // 1000 KB
-    buffer     (nullptr)
+PageCache::PageCache(u32 numPages)  : 
+    BUFFER_SIZE(numPages * sizeof(Page)),
+    NUM_PAGES(numPages)
 {    
-    buffer = new std::byte[BUFFER_SIZE];
+    thePages = new Page[NUM_PAGES];
+    thePageMap.reserve(NUM_PAGES); //reserve pages to avoid rehashing
+    
 };
 PageCache::~PageCache() {
-    delete[] buffer;
+    delete[] thePages;
 }

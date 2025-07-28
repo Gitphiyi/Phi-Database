@@ -5,6 +5,7 @@ cc_library(
     includes = [".",".."],         
     deps = [
         "//src:types_lib",
+        "//src:page_lib",
     ],
     visibility = ["//visibility:public"],
 )
