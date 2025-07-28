@@ -1,25 +1,33 @@
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
-#include <cstdio>       // for std::remove
+#include <cstdio>      
 #include "DbFile.hpp"
 
 using namespace DB;
 
-class DbFileTest : public ::testing::Test {
-protected:
-    std::string testFile = "test_dbfile.db";
+//bazel test --cxxopt=-std=c++17 --test_output=all //tests/dbfile:dbfile_test
+TEST(HelloTest, BasicAssertions) {
+  // Expect two strings not to be equal.
+  EXPECT_STRNE("hello", "world");
+  // Expect equality.
+  EXPECT_EQ(7 * 6, 42);
+}
 
-    void SetUp() override {
-        // Ensure the test file does not exist
-        std::remove(testFile.c_str());
-    }
+// class DbFileTest : public ::testing::Test {
+// protected:
+//     std::string testFile = "test_dbfile.db";
 
-    void TearDown() override {
-        // Cleanup the test file
-        std::remove(testFile.c_str());
-    }
-};
+//     void SetUp() override {
+//         // Ensure the test file does not exist
+//         std::remove(testFile.c_str());
+//     }
+
+//     void TearDown() override {
+//         // Cleanup the test file
+//         std::remove(testFile.c_str());
+//     }
+// };
 
 // TEST_F(DbFileTest, CreateFileSuccessfully) {
 //     EXPECT_NO_THROW({
