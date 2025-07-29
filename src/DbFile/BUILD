@@ -3,6 +3,9 @@ cc_library(
     srcs = glob(["*.cpp"]),        
     hdrs = glob(["*.hpp"]),          
     includes = [".",".."],         
-    deps = ["//src:types_lib"],
+    deps = [
+        "//src:types_lib",
+        "//src:page_lib",
+    ],
     visibility = ["//visibility:public"],
 )

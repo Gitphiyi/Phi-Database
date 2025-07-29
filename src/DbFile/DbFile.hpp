@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Page.hpp"
 #include "Types.hpp"
 
 namespace DB {
@@ -7,11 +8,15 @@ namespace DB {
         public:
             enum LockMode { Shared, Exclusive };
 
-            DbFile(const string& path, bool ifMissing, int permission);
+            DbFile(const string& path, bool ifMissing, Page& page);
             ~DbFile();
 
-            ssize_t read_at(void* buff, off_t offset, size_t sz);
-            ssize_t write_at(void* buff, off_t offset, size_t sz);
+            static void initialize(const std::string& path, bool ifMissing, Page& page);
+            static DbFile& getInstance();
+            static void checkIfFileDescriptorValid(int aFd);
+
+            ssize_t read_at(Page& buffer, off_t offset);
+            ssize_t write_at(Page& buffer, off_t offset);
 
             //Force cached data and metadata to storage
             void sync();
@@ -20,6 +25,7 @@ namespace DB {
             void close();
 
         private:
-            int theFd; //default fd value
+            int         theFd; //default fd value
+            Page&       theBuffer;
     };
 }

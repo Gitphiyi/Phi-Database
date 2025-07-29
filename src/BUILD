@@ -18,7 +18,7 @@ cc_library(
 cc_library(
     name = "page_lib",
     hdrs = ["Page.hpp"],
-    deps = [":types_lib"]
+    deps = [":types_lib"],
     visibility = ["//visibility:public"],
 )
 

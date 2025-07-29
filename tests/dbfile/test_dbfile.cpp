@@ -1,33 +1,38 @@
 #include <gtest/gtest.h>
 #include <string>
 #include <vector>
+#include <iostream>
 #include <cstdio>      
+#include "Page.hpp"
 #include "DbFile.hpp"
 
 using namespace DB;
 
 //bazel test --cxxopt=-std=c++17 --test_output=all //tests/dbfile:dbfile_test
-TEST(HelloTest, BasicAssertions) {
-  // Expect two strings not to be equal.
-  EXPECT_STRNE("hello", "world");
-  // Expect equality.
-  EXPECT_EQ(7 * 6, 42);
+
+class DbFileTest : public testing::Test {
+    protected:
+      std::string testPath = "test_dbfile.db";
+      Page testPage{Page(-1)};
+      DbFile* testDbFile = nullptr;
+
+      void SetUp() override {
+        DbFile::initialize(testPath, true, testPage);
+        testDbFile = &DbFile::getInstance();
+      }
+
+      // void TearDown() override {
+      //   // Cleanup the test file
+      //   std::remove(testFile.c_str());
+      // }
+};
+
+TEST(DbFileTest, InitializeDbFileSuccessfully) {
+  std::string path = "test.db";
+  std::cout << "Creating dbfile at: " << path << std::endl;
+  Page testPage{Page(-1)};
+  DbFile dbFile = DbFile(path, true, testPage);
 }
-
-// class DbFileTest : public ::testing::Test {
-// protected:
-//     std::string testFile = "test_dbfile.db";
-
-//     void SetUp() override {
-//         // Ensure the test file does not exist
-//         std::remove(testFile.c_str());
-//     }
-
-//     void TearDown() override {
-//         // Cleanup the test file
-//         std::remove(testFile.c_str());
-//     }
-// };
 
 // TEST_F(DbFileTest, CreateFileSuccessfully) {
 //     EXPECT_NO_THROW({
