@@ -14,7 +14,7 @@ namespace DB {
             static void initialize(const std::string& path, bool ifMissing, Page& page);
             static DbFile& getInstance();
             static void checkIfFileDescriptorValid(int aFd);
-
+            
             ssize_t read_at(Page& buffer, off_t offset);
             ssize_t write_at(Page& buffer, off_t offset);
 

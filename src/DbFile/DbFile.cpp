@@ -36,7 +36,6 @@ namespace DB {
         }
 
         theFd = ::open(path.c_str(), flags, 0644); //0644 is octal for rw for all users
-        std::cout<<"creating dbfile " << flags << " " << theFd << std::endl;
         if (theFd < 0) {
             throw std::system_error(errno, std::generic_category(), "File could not be created");
         }

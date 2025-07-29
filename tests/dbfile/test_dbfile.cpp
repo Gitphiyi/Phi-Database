@@ -3,6 +3,8 @@
 #include <vector>
 #include <iostream>
 #include <cstdio>      
+#include <unistd.h>
+
 #include "Page.hpp"
 #include "DbFile.hpp"
 
@@ -31,21 +33,20 @@ TEST(DbFileTest, InitializeDbFileSuccessfully) {
   std::string path = "test.db";
   std::cout << "Creating dbfile at: " << path << std::endl;
   Page testPage{Page(-1)};
-  DbFile dbFile = DbFile(path, true, testPage);
+
+  EXPECT_NO_THROW({
+    DbFile dbFile = DbFile(path, true, testPage);
+  });
+
+  ASSERT_EQ(access(path.c_str(), F_OK), 0);
 }
 
-// TEST_F(DbFileTest, CreateFileSuccessfully) {
-//     EXPECT_NO_THROW({
-//         DbFile db(testFile, true, 0644);
-//     });
-// }
-
-// TEST_F(DbFileTest, ThrowIfCannotOpenFile) {
-//     // Try to open a file in read/write mode that doesn't exist
-//     EXPECT_THROW({
-//         DbFile db("non_existent.db", false, 0644);
-//     }, std::system_error);
-// }
+TEST(DbFileTest, ThrowIfCannotOpenFile) {
+  Page testPage{Page(-1)};
+  EXPECT_THROW({
+    DbFile("non_existent.db", false, testPage);
+  }, std::system_error);
+}
 
 // TEST_F(DbFileTest, WriteAndReadData) {
 //     DbFile db(testFile, true, 0644);
