@@ -4,6 +4,8 @@
 #include <iostream>
 #include <cstdio>      
 #include <unistd.h>
+#include <filesystem>
+#include <cstdlib>
 
 #include "Page.hpp"
 #include "DbFile.hpp"
@@ -30,6 +32,7 @@ class DbFileTest : public testing::Test {
 };
 
 TEST(DbFileTest, InitializeDbFileSuccessfully) {
+  const char* tmp = std::getenv("TEST_TMPDIR");
   std::string path = "test.db";
   std::cout << "Creating dbfile at: " << path << std::endl;
   Page testPage{Page(-1)};
@@ -46,6 +49,10 @@ TEST(DbFileTest, ThrowIfCannotOpenFile) {
   EXPECT_THROW({
     DbFile("non_existent.db", false, testPage);
   }, std::system_error);
+}
+
+TEST() {
+  
 }
 
 // TEST_F(DbFileTest, WriteAndReadData) {

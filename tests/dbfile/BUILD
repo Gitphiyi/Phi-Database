@@ -8,5 +8,5 @@ cc_test(
         "//src:types_lib",    
         "@googletest//:gtest",
         "@googletest//:gtest_main",
-    ],
+    ]
 )

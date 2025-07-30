@@ -4,6 +4,7 @@
 #include <iostream>
 #include <bitset>
 #include <sys/fcntl.h>
+#include <filesystem>
 
 namespace DB {
 
@@ -34,8 +35,12 @@ namespace DB {
         if (ifMissing) {
             flags |= O_CREAT;
         }
-
-        theFd = ::open(path.c_str(), flags, 0644); //0644 is octal for rw for all users
+        // if (!std::filesystem::exists("db")) {
+        //     std::filesystem::create_directory("db");
+        // }
+        string filepath = path;
+        std::cout << filepath << std::endl;
+        theFd = ::open(filepath.c_str(), flags, 0644); //0644 is octal for rw for all users
         if (theFd < 0) {
             throw std::system_error(errno, std::generic_category(), "File could not be created");
         }

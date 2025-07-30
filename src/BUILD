@@ -1,10 +1,9 @@
 cc_library(
     name = "phi_lib",
     deps = [
+        ":types_lib",
+        ":page_lib",
         "//src/DbFile:dbfile_lib",
-        "//src/Table:table_lib",
-        "//src/PageCache:pagecache_lib",
-
     ],
     visibility = ["//visibility:public"],
 )
@@ -24,7 +23,7 @@ cc_library(
 
 
 cc_binary(
-    name = "startup",
+    name = "main",
     srcs = ["main.cpp"],
     deps = [
         ":phi_lib"
