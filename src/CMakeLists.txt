@@ -1,0 +1,10 @@
+add_subdirectory(DbFile)
+add_subdirectory(Database)
+add_subdirectory(Logger)
+add_subdirectory(PageCache)
+add_subdirectory(Table)
+add_subdirectory(WriteAheadLog)
+
+add_executable(phi_main main.cpp)
+target_include_directories(phi_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(phi_main dbfile) 

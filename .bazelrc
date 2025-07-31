@@ -1,2 +1,0 @@
-build:local_run --spawn_strategy=standalone  --cxxopt=-std=c++17
-run:local_run --spawn_strategy=standalone --cxxopt=-std=c++17
