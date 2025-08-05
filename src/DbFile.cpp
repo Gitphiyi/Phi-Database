@@ -35,9 +35,6 @@ namespace DB {
         if (ifMissing) {
             flags |= O_CREAT;
         }
-        // if (!std::filesystem::exists("db")) {
-        //     std::filesystem::create_directory("db");
-        // }
         string filepath = path;
         std::cout << filepath << std::endl;
         theFd = ::open(filepath.c_str(), flags, 0644); //0644 is octal for rw for all users
@@ -61,7 +58,7 @@ namespace DB {
         if(myReadBytes == 0) {
             std::cout << "EOF\n";
         }
-        if(myReadBytes != PAGE_SIZE) {
+        if(myReadBytes != PAGE_SIZE + PAGE_METADATA) {
             perror("Did not read enough bytes");
             return -1;
         }
@@ -75,7 +72,7 @@ namespace DB {
         if(myReadBytes == 0) {
             std::cout << "EOF\n";
         }
-        if(myReadBytes != PAGE_SIZE) {
+        if(myReadBytes != PAGE_SIZE + PAGE_METADATA) {
             perror("Did not read enough bytes");
             return -1;
         }

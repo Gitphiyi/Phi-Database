@@ -5,21 +5,14 @@
 #include "Types.hpp"
 #include "Page.hpp"
 #include "DbFile.hpp"
+#include "PageCache.hpp"
 
 using namespace DB;
 
-void setup() {
-    mkdir("db", 0755);
-}
 
-void dbfile_test(const char* filename) {
-    std::cout << "Creating dbfile at: " << filename << std::endl;
-    Page* buffer = new Page();
-    Page read{Page()};
-    DbFile dbFile = DbFile(filename, true, *buffer);
-
+void dbfile_test(DbFile& dbfile) {
     buffer->valid_bit = 1;
-    for(int i = 0; i < PAGE_SIZE; i+= sizeof(int)) {
+    for(int i = 0; i < PAGE_SIZE; i += sizeof(int)) {
         memcpy(buffer->data + i, &i, sizeof(int));
     }
 
@@ -31,10 +24,19 @@ void dbfile_test(const char* filename) {
     dbFile.close();
 }
 
+void pagecache_test() {
+}
+
 int main(int argc, char** argv) {
     const char* filename = "db/hi.db";
-    setup();
-    dbfile_test(filename);
+    mkdir("db", 0755);
+    std::cout << "Creating dbfile at: " << filename << std::endl;
+    Page* buffer = new Page();
+    DbFile dbfile = DbFile(filename, true, *buffer);
+    //PageCache cache = new PageCache(10, dbfile);
+    //dbfile_test();
+    //pagecache_test();
+    delete buffer;
 
     return 1;
 }
