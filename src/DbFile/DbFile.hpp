@@ -15,8 +15,10 @@ namespace DB {
             static DbFile& getInstance();
             static void checkIfFileDescriptorValid(int aFd);
             
+            //page offset and buffer page to read/write
+            ssize_t read_at(off_t offset);
             ssize_t read_at(Page& buffer, off_t offset);
-            ssize_t write_at(Page& buffer, off_t offset);
+            ssize_t write_at(off_t offset);
 
             //Force cached data and metadata to storage
             void sync();
