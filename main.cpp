@@ -7,7 +7,6 @@
 #include "DbFile.hpp"
 
 using namespace DB;
-// bazel run --config=local_run src:main
 
 void setup() {
     mkdir("db", 0755);
@@ -26,9 +25,10 @@ void dbfile_test(const char* filename) {
 
     dbFile.write_at(0);
     dbFile.read_at(*buffer, 0);
-    std::cout << buffer->valid_bit << std::endl;
     
-    buffer->print_int();
+    buffer->print<int>();
+
+    dbFile.close();
 }
 
 int main(int argc, char** argv) {

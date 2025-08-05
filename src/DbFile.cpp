@@ -97,6 +97,7 @@ namespace DB {
     void DbFile::sync() {
 
     }
+    
     void lock(DbFile::LockMode mode) {
 
     }  

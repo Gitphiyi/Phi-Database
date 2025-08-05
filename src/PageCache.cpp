@@ -4,12 +4,12 @@
 #include <new>
 
 #include "Page.hpp"
-#include "DbFile/DbFile.hpp"
+#include "DbFile.hpp"
 #include "PageCache.hpp"
 
 namespace DB {
     PageCache::PageCache(u32 numPages, DbFile fileApi)  : 
-        BUFFER_SIZE(numPages * sizeof(Page)),
+        CACHE_SIZE(numPages * sizeof(Page)),
         NUM_PAGES(numPages),
         theDbFile(fileApi)
     {    
@@ -23,7 +23,7 @@ namespace DB {
     };
 
     PageCache::~PageCache() {
-        ::operator delete[](thePages);    
+        delete[](thePages);    
         //other objects are RAII so are destructed when class is destroyed
     }
 
@@ -51,7 +51,6 @@ namespace DB {
             // Step 2: Load page data (here, just clear it for now)
             //page->clear();
             bool succ = loadPageFromDisk(pageId, *page);
-            page->id = pageId;
             page->valid_bit = true;
             page->ref_count = 1;
 
@@ -70,7 +69,7 @@ namespace DB {
 
     bool PageCache::loadPageFromDisk(u32 pageId, Page& page) {
         off_t offset = pageId * PAGE_SIZE;
-        ssize_t bytesRead = theDbFile.read_at(page.data, PAGE_SIZE, offset);
+        ssize_t bytesRead = theDbFile.read_at(page, offset);
         return bytesRead == PAGE_SIZE;
     }
 }
