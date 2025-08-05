@@ -9,19 +9,16 @@ class Database {
     public:
         Database(u64 pgSize, Logger& logger, PageCache& cache);
         int     create_database();
-        int     write_metadata();
+        int     write_header_page();
         int     create_table(string tableName, Orientation type, const std::vector<Column>& schema);
         string  print_tables();
         
     private:
         string                  theName;
-
-        u64                     thePageSize;
+        Link        
         std::vector<Table&>     theTables;
         Logger&                 theLogger;
         PageCache&              thePageCache;
-
-
 };
 // +-------------------+  ← Offset 0
 // | Header / Metadata |

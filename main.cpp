@@ -10,7 +10,7 @@
 using namespace DB;
 
 
-void dbfile_test(DbFile& dbfile) {
+void dbfile_test(DbFile& dbFile, Page* buffer) {
     buffer->valid_bit = 1;
     for(int i = 0; i < PAGE_SIZE; i += sizeof(int)) {
         memcpy(buffer->data + i, &i, sizeof(int));
@@ -24,7 +24,8 @@ void dbfile_test(DbFile& dbfile) {
     dbFile.close();
 }
 
-void pagecache_test() {
+void pagecache_test(PageCache& cache) {
+    cache.write_through();
 }
 
 int main(int argc, char** argv) {
@@ -32,10 +33,10 @@ int main(int argc, char** argv) {
     mkdir("db", 0755);
     std::cout << "Creating dbfile at: " << filename << std::endl;
     Page* buffer = new Page();
-    DbFile dbfile = DbFile(filename, true, *buffer);
-    //PageCache cache = new PageCache(10, dbfile);
+    DbFile dbFile = DbFile(filename, true, *buffer);
+    PageCache cache = PageCache(10, dbFile);
     //dbfile_test();
-    //pagecache_test();
+    pagecache_test();
     delete buffer;
 
     return 1;

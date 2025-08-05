@@ -8,7 +8,7 @@
 #include "PageCache.hpp"
 
 namespace DB {
-    PageCache::PageCache(u32 numPages, DbFile fileApi)  : 
+    PageCache::PageCache(u32 numPages, DbFile& fileApi)  : 
         CACHE_SIZE(numPages * sizeof(Page)),
         NUM_PAGES(numPages),
         theDbFile(fileApi)
