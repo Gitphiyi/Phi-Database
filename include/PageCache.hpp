@@ -12,10 +12,10 @@ namespace DB {
             const u64 CACHE_SIZE; //
             const u32 NUM_PAGES;
             PageCache(u32 numPages, DbFile& fileApi);
-            ~PageCache();
+            //~PageCache();
 
             Page& read(u32 pageId); 
-            int write_through(); // write through
+            int write_through(Page& page, string filepath); // write through
             bool loadPageFromDisk(u32 pageId, Page& page);
 
         private:

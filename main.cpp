@@ -5,6 +5,7 @@
 #include "Types.hpp"
 #include "Page.hpp"
 #include "DbFile.hpp"
+#include "Database.hpp"
 #include "PageCache.hpp"
 
 using namespace DB;
@@ -25,18 +26,19 @@ void dbfile_test(DbFile& dbFile, Page* buffer) {
 }
 
 void pagecache_test(PageCache& cache) {
-    cache.write_through();
+    //cache.write_through();
 }
 
 int main(int argc, char** argv) {
     const char* filename = "db/hi.db";
     mkdir("db", 0755);
+    mkdir("db/table", 0755);
     std::cout << "Creating dbfile at: " << filename << std::endl;
-    Page* buffer = new Page();
+    Page* buffer = new Page(1);
     DbFile dbFile = DbFile(filename, true, *buffer);
-    PageCache cache = PageCache(10, dbFile);
+    Database db = Database("phi-db");
     //dbfile_test();
-    pagecache_test();
+    //pagecache_test();
     delete buffer;
 
     return 1;

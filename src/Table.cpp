@@ -1,21 +1,17 @@
 #include "Table.hpp"
-#include "../Types.hpp"
+#include "Types.hpp"
+#include "Page.hpp"
 #include "DbFile.hpp"
 
 #include <sys/fcntl.h>
 
 
-Table::Table(const string& filepath, const Orientation type, const std::vector<Column>& schema, PageCache& cache) :
-    theFilepath(filepath),
-    theDbFile(DbFile(filepath, false, 0666)),
+Table::Table(const string& name, const Orientation type, const std::vector<Column>& schema, PageCache& cache) :
+    theFileName("db/table/"+name),
     theOrientation(type),
     theCache(cache),
     theRowSize(computeRowSize(schema))
-{
-       
-    theFreePages.clear();
-    
-}
+{}
 
 static std::size_t computeRowSize(const std::vector<Column>& schema) {
     std::size_t size = 0;

@@ -6,18 +6,18 @@
 
 
 #define PAGE_SIZE 4096 //4KB Page
-#define PAGE_METADATA 32 //32 bytes
+#define PAGE_METADATA 16 //in bytes
 #define PAGE_DATA_SIZE PAGE_SIZE - PAGE_METADATA
 
 struct Page {
     bool        valid_bit; //contains valid info (not empty, not junk, etc.)
-    bool        dirty_bit;
-    u16         ref_count;
+    bool        dirty_bit; //is the stuff on the page dirty as in it has writes to it ?
+    u16         ref_count; //how many tables reference this page or is it a database header
     u32         id;
-    std::byte   data[PAGE_DATA_SIZE 
-    Page() : dirty_bit(false), valid_bit(false), ref_count(0) {}
+    std::byte   data[PAGE_DATA_SIZE];
+    Page(u32 id) : dirty_bit(false), valid_bit(false), ref_count(0), id(id) {}
 
-    void clear() { std::memset(data, 0, PAGE_DATA_SIZE }
+    void clear() { std::memset(data, 0, PAGE_DATA_SIZE); }
 
     template<typename T>
     void print() {

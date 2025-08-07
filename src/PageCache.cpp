@@ -27,6 +27,11 @@ namespace DB {
         //other objects are RAII so are destructed when class is destroyed
     }
 
+    void PageCache::write_through(Page& page, string filepath) {
+        ssize_t bytes_written = DbFile.write_at(page.id);
+        std::cout << bytes_written << std::endl;
+    }
+
     Page& PageCache::read(u32 pageId) {
         auto mapEntry = thePageMap.find(pageId);
         if(mapEntry == thePageMap.end() || !mapEntry->second->valid_bit) {
