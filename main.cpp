@@ -36,10 +36,10 @@ int main(int argc, char** argv) {
     std::cout << "Creating dbfile at: " << filename << std::endl;
     Page* buffer = new Page(1);
     DbFile dbFile = DbFile(filename, true, *buffer);
-    Database db = Database("phi-db");
+    Database db("phi-db");
     //dbfile_test();
     //pagecache_test();
-    delete buffer;
+    //delete buffer;
 
-    return 1;
+    return 0;
 }

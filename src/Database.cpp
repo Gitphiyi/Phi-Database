@@ -3,29 +3,24 @@
 #include "Types.hpp"
 #include "Page.hpp"
 
-namespace db {
-    Database::Database(string name) :
+namespace DB {
+    Database::Database(const string& name) :
         theName(name),
-        theHeaderPage(new Page(0)),
-        theFreePages(),
-        theTables(),
-        theLogger(logger),
-        thePageCache(cache)
-    {}
+        theHeaderPage(0){}
 
-    void update_header_page(Table& table) {
-        std::cout << "print table path and name in the stuff for indexing." << std::endl;
-    }
+    // void update_header_page(Table& table) {
+    //     std::cout << "print table path and name in the stuff for indexing." << std::endl;
+    // }
 
-    Database::create_table(const string tableName, Orientation type, const Schema& schema) {
-        Table table = Table(tableName, type, Schema);
-        theTables.push_back();
-    }
+    // Database::create_table(const string& tableName, Orientation type, const Schema& schema) {
+    //     Table table = Table(tableName, type, Schema);
+    //     theTables.push_back(table);
+    // }
 
-    Database::write_header_page() {
-        return 1;
-        //thePageCache.write_through();
-    }
+    // Database::write_header_page() {
+    //     return 1;
+    //     //thePageCache.write_through();
+    // }
    
 }
 

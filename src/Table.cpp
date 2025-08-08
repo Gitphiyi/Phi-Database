@@ -1,5 +1,5 @@
-#include "Table.hpp"
 #include "Types.hpp"
+#include "Table.hpp"
 #include "Page.hpp"
 #include "DbFile.hpp"
 
@@ -13,16 +13,10 @@ Table::Table(const string& name, const Orientation type, const std::vector<Colum
     theRowSize(computeRowSize(schema))
 {}
 
-static std::size_t computeRowSize(const std::vector<Column>& schema) {
-    std::size_t size = 0;
-    for (auto& col : schema) {
-        size += sizeof(col.type);
-    }
-    return size;
-}
 
-u64 read(u64 pageNum, u16 rowNum, Row row) {
-    // first check buffer
-    // make a read to disk
-}
+
+// u64 read(u64 pageNum, u16 rowNum, Row row) {
+//     // first check buffer
+//     // make a read to disk
+// }
 
