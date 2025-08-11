@@ -5,9 +5,9 @@
 #include <iostream>
 
 
-#define PAGE_SIZE 4096 //4KB Page
-#define PAGE_METADATA 16 //in bytes
-#define PAGE_DATA_SIZE PAGE_SIZE - PAGE_METADATA
+#define PAGE_SIZE 128 //4KB Page
+#define PAGE_METADATA 64 //in bytes
+#define PAGE_DATA_SIZE (PAGE_SIZE - PAGE_METADATA)
 
 struct Page {
     bool        valid_bit; //contains valid info (not empty, not junk, etc.)
@@ -16,6 +16,7 @@ struct Page {
     u32         id;
     std::byte   data[PAGE_DATA_SIZE];
     Page(u32 id) : dirty_bit(false), valid_bit(false), ref_count(0), id(id) {}
+    Page& operator=(Page& o) = default;
 
     void clear() { std::memset(data, 0, PAGE_DATA_SIZE); }
 
@@ -26,17 +27,21 @@ struct Page {
         std::cout << "ref_count: " << ref_count << std::endl;
         std::cout << "page data: " << std::endl;
 
-        if (PAGE_DATA_SIZE% sizeof(T) != 0) {
+        if (PAGE_DATA_SIZE % sizeof(T) != 0) {
             perror("Type attempting to be printed is not aligned with page size");
             return;
         }
-        for(int i = 0; i < PAGE_DATA_SIZE; i+= sizeof(T)) {
-            if( i == PAGE_SIZE - 1) {
-                std::cout << std::endl;
+        for(int i = 0; i < PAGE_DATA_SIZE / sizeof(T); i ++){
+            T num;
+            char* ptr = reinterpret_cast<char*>(data) + i * sizeof(T);
+            memcpy(&num, (data+i*sizeof(T)), sizeof(T));
+            std::cout << num;
+            if( i < (PAGE_DATA_SIZE / sizeof(T)) - 1) {
+                std::cout << ", ";
             }
-            int num;
-            memcpy(&num, &data[i], sizeof(T));
-            std::cout << num << ", ";
         }
+        std::cout << std::endl;
     }
 };
+
+//static_assert(sizeof(Page) == PAGE_SIZE,"Page must occupy exactly one on-disk page");

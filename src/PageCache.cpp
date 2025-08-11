@@ -13,70 +13,92 @@ namespace DB {
         NUM_PAGES(numPages),
         theDbFile(fileApi)
     {    
-        thePages = static_cast<Page*>(::operator new[](NUM_PAGES * sizeof(Page))); //allocates space for the pages
         thePageMap.reserve(NUM_PAGES); //reserve pages to avoid rehashing
-
-        //all pages in cache are free at the moment
-        for (u32 i = 0; i < NUM_PAGES; ++i) {
-            theFreePages.push(&thePages[i]);
-        }
     };
 
-    PageCache::~PageCache() {
-        delete[](thePages);    
-        //other objects are RAII so are destructed when class is destroyed
+    bool PageCache::write_through(Page& page, const string& filepath) {
+        int fd = theDbFile.add_path(filepath);
+        ssize_t bytes_written = theDbFile.write_at(page.id, page, fd);
+        std::cout << bytes_written << " bytes were written into " << filepath << std::endl;
+        return true;
     }
 
-    void PageCache::write_through(u32 id, string filepath) {
-        Page page = thePageMap.at(id);
-        page.dirty_bit = 0;
-        ssize_t bytes_written = DbFile.write_at(page.id);
-        std::cout << bytes_written << std::endl;
-    }
-
-    Page& PageCache::read(u32 pageId) {
-        auto mapEntry = thePageMap.find(pageId);
-        if(mapEntry == thePageMap.end() || !mapEntry->second->valid_bit) {
-            std::cout << "read miss" << std::endl;
-
-            //Step 1: get a free page
-            Page* page = nullptr;
-            //check if there are free pages
-            if (!theFreePages.empty()) {
-                page = theFreePages.top();
-                theFreePages.pop();
-            } else {
-                if (thePageMap.empty()) {
-                    throw std::runtime_error("Page cache is empty and cannot evict!");
-                }
-                auto victim = thePageMap.begin();
-                page = victim->second;
-                thePageMap.erase(victim);
-                // Here, you might write back dirty pages, etc.
-            }
-
-            // Step 2: Load page data (here, just clear it for now)
-            //page->clear();
-            bool succ = loadPageFromDisk(pageId, *page);
-            page->valid_bit = true;
-            page->ref_count = 1;
-
-            // Step 3: Insert into thePageMap
-            thePageMap[pageId] = page;
-
-            return *page;
-
-        } else {
-            std::cout << "read hit" << std::endl;
-            Page* page = mapEntry->second;
-            page->ref_count += 1;
-            return *(page);
+    Page& PageCache::read(u32 pageId, Page& buffer, const string& filepath) {
+        //check cache to see if page exists
+        if(thePageMap.contains(pageId)) {
+            buffer = *(thePageMap[pageId]);
+            return buffer;
         }
+        else {
+            std::cout << "cache read miss" << std::endl;
+        }
+
+        //read page into buffer from disk
+        int fd = theDbFile.get_path(filepath);
+        if(fd == -1) {
+            std::cout << "path is invalid" << std::endl;
+        }
+        //need to read from an address
+        ssize_t bytes_read = theDbFile.read_at(pageId, buffer, fd);
+
+        //evict_page(buffer, thePageMap, theUsedPages, NUM_PAGES);
+        std::cout << bytes_read << " bytes were read from " << filepath << std::endl;
+
+
+        return buffer;
     }
 
-    bool PageCache::loadPageFromDisk(u32 pageId, Page& page) {
-        off_t offset = pageId * PAGE_SIZE;
-        ssize_t bytesRead = theDbFile.read_at(page, offset);
-        return bytesRead == PAGE_SIZE;
+    void evict_page(Page& page, std::unordered_map<u32, Page*>& pageMap, std::stack<Page*>& usedPages, u64 numPages) {
+        if(usedPages.size() < numPages) {
+            usedPages.push(&page);
+            pageMap[page.id] = &page;
+        } //cache has space 
+        else {
+            Page* evicted_page = usedPages.top();
+            usedPages.pop();
+            pageMap.erase(evicted_page->id);
+            pageMap[page.id] = &page;
+        }
+
     }
+    
+    // Page& PageCache::read(u32 pageId, const string& filepath) {
+    //     auto mapEntry = thePageMap.find(pageId);
+    //     if(mapEntry == thePageMap.end() || !mapEntry->second->valid_bit) {
+    //         std::cout << "read miss" << std::endl;
+
+    //         //Step 1: get a free page
+    //         Page* page = nullptr;
+    //         //check if there are free pages
+    //         if (!theFreePages.empty()) {
+    //             page = theFreePages.top();
+    //             theFreePages.pop();
+    //         } else {
+    //             if (thePageMap.empty()) {
+    //                 throw std::runtime_error("Page cache is empty and cannot evict!");
+    //             }
+    //             auto victim = thePageMap.begin();
+    //             page = victim->second;
+    //             thePageMap.erase(victim);
+    //             // Here, you might write back dirty pages, etc.
+    //         }
+
+    //         // Step 2: Load page data (here, just clear it for now)
+    //         //page->clear();
+    //         bool succ = loadPageFromDisk(pageId, *page);
+    //         page->valid_bit = true;
+    //         page->ref_count = 1;
+
+    //         // Step 3: Insert into thePageMap
+    //         thePageMap[pageId] = page;
+
+    //         return *page;
+
+    //     } else {
+    //         std::cout << "read hit" << std::endl;
+    //         Page* page = mapEntry->second;
+    //         page->ref_count += 1;
+    //         return *(page);
+    //     }
+    // }
 }

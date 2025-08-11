@@ -12,7 +12,7 @@ class Logger {
     private: 
         string  theTableName;
         string  theLogFile;
-        int     theFd;
+        int     theDbFd;
 
         void    parseLog();
 };

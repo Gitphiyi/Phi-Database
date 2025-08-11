@@ -17,29 +17,39 @@ void dbfile_test(DbFile& dbFile, Page* buffer) {
         memcpy(buffer->data + i, &i, sizeof(int));
     }
 
-    dbFile.write_at(0);
-    dbFile.read_at(*buffer, 0);
+    dbFile.db_write_at(0, *buffer);
+    dbFile.read_at(buffer->id, *buffer, 0);
     
     buffer->print<int>();
 
     dbFile.close();
 }
 
-void pagecache_test(PageCache& cache) {
-    //cache.write_through();
+void pagecache_test(PageCache& cache, const string filepath) {
+    Page* test = new Page(1);
+    Page* test_read = new Page(2);
+    for(int i = 0; i < PAGE_DATA_SIZE / sizeof(int); i ++) {
+        memcpy(test->data + sizeof(int) * i, &i, sizeof(int));
+    }
+    cache.write_through(*test, filepath);
+    cache.read(test->id, *test_read, filepath);
+    test_read->print<int>();
+    delete test;
+    delete test_read;
 }
 
 int main(int argc, char** argv) {
-    const char* filename = "db/hi.db";
+    const string filename = "db/hi.db";
     mkdir("db", 0755);
     mkdir("db/table", 0755);
     std::cout << "Creating dbfile at: " << filename << std::endl;
-    Page* buffer = new Page(1);
-    DbFile dbFile = DbFile(filename, true, *buffer);
+    u32 numPages = 10;
+    DbFile dbFile = DbFile(filename, true);
+    PageCache pgCache(numPages, dbFile);
     Database db("phi-db");
+
     //dbfile_test();
-    //pagecache_test();
-    //delete buffer;
+    pagecache_test(pgCache, filename);
 
     return 0;
 }

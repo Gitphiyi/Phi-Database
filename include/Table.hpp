@@ -11,14 +11,16 @@ namespace DB {
         public:
             //initialize new Table
             Table(const string& name, const Orientation type, Schema& schema);
+            //destructor for  removing table FD and closing pipe
 
             // initialize existing Table
             //Table(const string& name, PageCache& bufPool);
 
             //return page number where row is placed. row byte size must equal schema
-            u64           insert();
-            u64           read(u64 pageNum, u16 rowNum);
-            string        print_metadata();
+            u64             insert();
+            void            write_page(u64 pageNum);
+            u64             read(u64 pageNum, u16 rowNum);
+            string          print_metadata();
 
         private:
             const Orientation       theOrientation;
