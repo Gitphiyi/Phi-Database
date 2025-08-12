@@ -22,6 +22,7 @@ struct Page {
 
     template<typename T>
     void print() {
+        std::cout << "----------Page----------" << std::endl;
         std::cout << "valid bit: " << valid_bit << std::endl;
         std::cout << "dirty bit: " << dirty_bit << std::endl;
         std::cout << "ref_count: " << ref_count << std::endl;
@@ -41,6 +42,7 @@ struct Page {
             }
         }
         std::cout << std::endl;
+        std::cout << "------------------------" << std::endl;
     }
 };
 
