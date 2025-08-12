@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
     mkdir("db", 0755);
     mkdir("db/table", 0755);
     std::cout << "Creating dbfile at: " << filename << std::endl;
-    u32 numPages = 10;
+    u32 numPages = 2;
     DbFile dbFile = DbFile(filename, true);
     PageCache pgCache(numPages, dbFile);
     Database db("phi-db");

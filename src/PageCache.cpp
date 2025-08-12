@@ -26,6 +26,7 @@ namespace DB {
             theUsedPages.pop();
             thePageMap.erase(evicted_page->id);
             thePageMap[page.id] = &page;
+            std::cout << "evicted page " << evicted_page->id << std::endl;
         }
     }
 
