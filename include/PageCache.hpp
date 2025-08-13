@@ -24,8 +24,8 @@ namespace DB {
             void                                print();
         private:
             DbFile&                             theDbFile;
-            std::unordered_map<u32, size_t>      thePageMap;
-            std::stack<size_t>                   theUsedPages;
+            std::unordered_map<u32, size_t>     thePageMap;
+            std::stack<size_t>                  theUsedPages;
             std::deque<Page>                    theCachePages;
             std::vector<size_t>                 theFreePages;
             void                                evict_add_page(Page& page);

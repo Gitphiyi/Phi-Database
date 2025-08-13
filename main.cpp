@@ -37,11 +37,13 @@ void pagecache_test(PageCache& cache, const string filepath) {
         memcpy(p2->data + sizeof(int) * i, &temp, sizeof(int));
         temp = i*3;
         memcpy(p3->data + sizeof(int) * i, &temp, sizeof(int));
-
     }
+
+    test->print<int>();
     cache.write_through(*test, filepath);
     cache.write_through(*p2, filepath);
     cache.write_through(*p3, filepath);
+    cache.print();
 
     cache.read(test->id, *test_read, filepath);
     test_read->print<int>();
@@ -49,6 +51,8 @@ void pagecache_test(PageCache& cache, const string filepath) {
     p3->print<int>();
     cache.print();
     delete test;
+    delete p2;
+    delete p3;
     delete test_read;
 }
 

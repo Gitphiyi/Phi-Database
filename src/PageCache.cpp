@@ -24,7 +24,10 @@ namespace DB {
     void PageCache::evict_add_page(Page& page) {
         if(theUsedPages.size() < NUM_PAGES) {
             // place page into cache
-            size_t idx = theFreePages[theFreePages.size()]-1;
+            size_t idx = theFreePages[theFreePages.size()-1];
+            std::cout<< "idx: " << idx << "\n";
+
+            theFreePages.pop_back();
             theCachePages[idx] = page;
             theUsedPages.push(idx);
             thePageMap[page.id] = idx;
@@ -53,7 +56,7 @@ namespace DB {
         std::cout << bytes_written << " bytes were written into " << filepath << std::endl;
         
         //add page to cache
-        evict_add_page(page);
+        //evict_add_page(page);
         return true;
     }
 
@@ -91,7 +94,8 @@ namespace DB {
 
         std::cout << "PageCache map (id => page address): \n{" << std::endl;
         for(auto it = thePageMap.begin(); it != thePageMap.end(); ++it) {
-            std::cout << "\t" << it->first << " => " << it->second << ",\n";
+            size_t idx = it->second;
+            std::cout << "\t" << it->first << " => idx " << idx << " has page id " << theCachePages[idx].id << ",\n";
         }
         std::cout << "}" << std::endl;
         std::cout << "-----------------------------" << std::endl;

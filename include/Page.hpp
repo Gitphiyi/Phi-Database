@@ -5,9 +5,9 @@
 #include <iostream>
 
 
-#define PAGE_SIZE 128 //4KB Page
-#define PAGE_METADATA 64 //in bytes
-#define PAGE_DATA_SIZE (PAGE_SIZE - PAGE_METADATA)
+#define PAGE_SIZE sizeof(Page) //4KB Page
+#define PAGE_METADATA PAGE_SIZE - PAGE_DATA_SIZE //in bytes
+#define PAGE_DATA_SIZE 64 // in bytes
 
 struct Page {
     bool        valid_bit; //contains valid info (not empty, not junk, etc.)
@@ -17,11 +17,14 @@ struct Page {
     std::byte   data[PAGE_DATA_SIZE];
     Page() : dirty_bit(false), valid_bit(false), ref_count(0), id(0) {}
     Page(u32 id) : dirty_bit(false), valid_bit(false), ref_count(0), id(id) {}
-    Page& operator=(Page& o) {
+    Page operator=(Page& o) {
+        std::cout << "copying page \n";
         this->valid_bit = o.valid_bit;
         this->dirty_bit = o.dirty_bit;
         this->ref_count = o.dirty_bit;
         memcpy(data, o.data, PAGE_DATA_SIZE);
+        std::cout << "successful copy \n";
+        return *this;
     }
 
     void clear() { std::memset(data, 0, PAGE_DATA_SIZE); }
