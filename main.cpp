@@ -39,7 +39,6 @@ void pagecache_test(PageCache& cache, const string filepath) {
         memcpy(p3->data + sizeof(int) * i, &temp, sizeof(int));
     }
 
-    test->print<int>();
     cache.write_through(*test, filepath);
     cache.write_through(*p2, filepath);
     cache.write_through(*p3, filepath);

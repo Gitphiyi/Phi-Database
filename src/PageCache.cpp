@@ -25,7 +25,6 @@ namespace DB {
         if(theUsedPages.size() < NUM_PAGES) {
             // place page into cache
             size_t idx = theFreePages[theFreePages.size()-1];
-            std::cout<< "idx: " << idx << "\n";
 
             theFreePages.pop_back();
             theCachePages[idx] = page;
@@ -37,7 +36,7 @@ namespace DB {
             size_t evicted_idx = theUsedPages.top();
             Page evicted_page = theCachePages[evicted_idx];
             theUsedPages.pop();
-            thePageMap.erase(evicted_idx);
+            thePageMap.erase(evicted_page.id);
 
             //place page into cache
             theCachePages[evicted_idx] = page;
@@ -56,7 +55,7 @@ namespace DB {
         std::cout << bytes_written << " bytes were written into " << filepath << std::endl;
         
         //add page to cache
-        //evict_add_page(page);
+        evict_add_page(page);
         return true;
     }
 

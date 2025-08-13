@@ -18,12 +18,11 @@ struct Page {
     Page() : dirty_bit(false), valid_bit(false), ref_count(0), id(0) {}
     Page(u32 id) : dirty_bit(false), valid_bit(false), ref_count(0), id(id) {}
     Page operator=(Page& o) {
-        std::cout << "copying page \n";
         this->valid_bit = o.valid_bit;
         this->dirty_bit = o.dirty_bit;
         this->ref_count = o.dirty_bit;
+        this->id = o.id;
         memcpy(data, o.data, PAGE_DATA_SIZE);
-        std::cout << "successful copy \n";
         return *this;
     }
 
