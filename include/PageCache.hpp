@@ -1,6 +1,9 @@
 #pragma once
 
 #include <unordered_map>
+#include <vector>
+#include <unordered_set>
+
 #include <stack>
 
 
@@ -9,6 +12,7 @@
 #include "Page.hpp"
 
 namespace DB {
+
     class PageCache {
         public:
             const u64 CACHE_SIZE;
@@ -20,9 +24,10 @@ namespace DB {
             void                                print();
         private:
             DbFile&                             theDbFile;
-            std::unordered_map<u32, Page*>      thePageMap;
-            std::stack<Page*>                   theUsedPages;
+            std::unordered_map<u32, size_t>      thePageMap;
+            std::stack<size_t>                   theUsedPages;
+            std::deque<Page>                    theCachePages;
+            std::vector<size_t>                 theFreePages;
             void                                evict_add_page(Page& page);
-            //might not need thePages. will do optimizations later
     };
 }

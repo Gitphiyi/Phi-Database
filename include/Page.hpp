@@ -15,8 +15,14 @@ struct Page {
     u16         ref_count; //how many tables reference this page or is it a database header
     u32         id;
     std::byte   data[PAGE_DATA_SIZE];
+    Page() : dirty_bit(false), valid_bit(false), ref_count(0), id(0) {}
     Page(u32 id) : dirty_bit(false), valid_bit(false), ref_count(0), id(id) {}
-    Page& operator=(Page& o) = default;
+    Page& operator=(Page& o) {
+        this->valid_bit = o.valid_bit;
+        this->dirty_bit = o.dirty_bit;
+        this->ref_count = o.dirty_bit;
+        memcpy(data, o.data, PAGE_DATA_SIZE);
+    }
 
     void clear() { std::memset(data, 0, PAGE_DATA_SIZE); }
 

@@ -14,20 +14,33 @@ namespace DB {
         theDbFile(fileApi)
     {    
         thePageMap.reserve(NUM_PAGES); //reserve pages to avoid rehashing
+        // fill cache with pages 
+        for(int i = 0; i < numPages; i++) {
+            theCachePages.push_back( *(new Page(-i - 1)) );
+            theFreePages.push_back(i);
+        }
     };
 
     void PageCache::evict_add_page(Page& page) {
         if(theUsedPages.size() < NUM_PAGES) {
-            theUsedPages.push(&page);
-            thePageMap[page.id] = &page;
+            // place page into cache
+            size_t idx = theFreePages[theFreePages.size()]-1;
+            theCachePages[idx] = page;
+            theUsedPages.push(idx);
+            thePageMap[page.id] = idx;
+
         } //cache has space 
         else {
-            Page* evicted_page = theUsedPages.top();
+            size_t evicted_idx = theUsedPages.top();
+            Page evicted_page = theCachePages[evicted_idx];
             theUsedPages.pop();
-            thePageMap.erase(evicted_page->id);
-            thePageMap[page.id] = &page;
-            std::cout << "evicted page " << evicted_page->id << std::endl;
-        }
+            thePageMap.erase(evicted_idx);
+
+            //place page into cache
+            theCachePages[evicted_idx] = page;
+            thePageMap[page.id] = evicted_idx;
+            std::cout << "evicted page " << evicted_page.id << std::endl;
+        } //cache is full
     }
 
     bool PageCache::write_through(Page& page, const string& filepath) {
@@ -48,7 +61,8 @@ namespace DB {
         //check cache to see if page exists
         if(thePageMap.contains(pageId)) {
             std::cout << "cache read hit" << std::endl;
-            buffer = *(thePageMap[pageId]);
+            size_t idx = thePageMap[pageId];
+            buffer = theCachePages[idx];
             return buffer;
         }
         else {
