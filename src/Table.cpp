@@ -5,13 +5,20 @@
 
 #include <sys/fcntl.h>
 
+using namespace DB;
 
-Table::Table(const string& name, const Orientation type, const std::vector<Column>& schema, PageCache& cache) :
-    theFileName("db/table/"+name),
+Table::Table(const string& name,
+             Orientation type, 
+            Schema& schema, 
+            PageCache& cache
+            ) :
     theOrientation(type),
-    theCache(cache),
-    theRowSize(computeRowSize(schema))
-{}
+    theFileName(name),
+    thePath("db/table/"+name),
+    theSchema(schema),
+    theCache(cache) {
+        
+    }
 
 
 

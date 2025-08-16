@@ -10,9 +10,8 @@ namespace DB {
     class Table {
         public:
             //initialize new Table
-            Table(const string& name, const Orientation type, Schema& schema);
+            Table(const string& name, const Orientation type, Schema& schema, PageCache& cache);
             //destructor for  removing table FD and closing pipe
-
             // initialize existing Table
             //Table(const string& name, PageCache& bufPool);
 
@@ -25,7 +24,7 @@ namespace DB {
         private:
             const Orientation       theOrientation;
             const string            theFileName;
-            size_t                  theRowSize;
+            const string            thePath;
             std::vector<u64>        theFreePages; 
             Schema                  theSchema;    
             PageCache               theCache;

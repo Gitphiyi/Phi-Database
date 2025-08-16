@@ -53,3 +53,9 @@ struct Schema {
     columns.emplace_back(name, type, nullable, primaryKey, unique, defaultVal);
   }
 };
+
+struct Operation {
+  string  filename;
+  Page&   buffer;
+  int     (*file_op)(string, Page&);
+};

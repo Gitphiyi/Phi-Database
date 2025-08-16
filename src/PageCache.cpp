@@ -14,9 +14,11 @@ namespace DB {
         theDbFile(fileApi)
     {    
         thePageMap.reserve(NUM_PAGES); //reserve pages to avoid rehashing
+        theFreePages.reserve(NUM_PAGES);
+    
         // fill cache with pages 
+        theCachePages = new Page[numPages];
         for(int i = 0; i < numPages; i++) {
-            theCachePages.push_back( *(new Page(-i - 1)) );
             theFreePages.push_back(i);
         }
     };

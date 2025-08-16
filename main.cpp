@@ -45,14 +45,22 @@ void pagecache_test(PageCache& cache, const string filepath) {
     cache.print();
 
     cache.read(test->id, *test_read, filepath);
-    test_read->print<int>();
-    p2->print<int>();
-    p3->print<int>();
+    // test_read->print<int>();
+    // p2->print<int>();
+    // p3->print<int>();
     cache.print();
     delete test;
     delete p2;
     delete p3;
     delete test_read;
+}
+
+void table_test(PageCache& cache) {
+    int cols = 5;
+    Orientation orientation = ROW;
+    Schema* schema = new Schema(cols);
+    Table table = Table("test_table", orientation, *schema, cache);
+
 }
 
 int main(int argc, char** argv) {
@@ -66,7 +74,7 @@ int main(int argc, char** argv) {
     Database db("phi-db");
 
     //dbfile_test();
-    pagecache_test(pgCache, filename);
-
+    //pagecache_test(pgCache, filename);
+    table_test(pgCache);
     return 0;
 }
