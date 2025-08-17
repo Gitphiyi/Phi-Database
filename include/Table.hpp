@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Types.hpp"
+#include "Structs.hpp"
 #include "PageCache.hpp"
 #include "DbFile.hpp"
 #include <vector>
@@ -12,9 +13,9 @@ namespace DB {
             //initialize new Table
             Table(const string& name, const Orientation type, Schema& schema, PageCache& cache);
             //destructor for  removing table FD and closing pipe
-            // initialize existing Table
-            //Table(const string& name, PageCache& bufPool);
 
+
+            Table&          get_table(const string& name, PageCache& bufPool); //get table metadata from disk
             //return page number where row is placed. row byte size must equal schema
             u64             insert();
             void            write_page(u64 pageNum);

@@ -7,6 +7,7 @@
 #include "DbFile.hpp"
 #include "Database.hpp"
 #include "PageCache.hpp"
+#include "TScheduler.hpp"
 
 using namespace DB;
 
@@ -72,6 +73,7 @@ int main(int argc, char** argv) {
     DbFile dbFile = DbFile(filename, true);
     PageCache pgCache(numPages, dbFile);
     Database db("phi-db");
+    TScheduler ts = TScheduler();
 
     //dbfile_test();
     //pagecache_test(pgCache, filename);

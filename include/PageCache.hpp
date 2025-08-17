@@ -3,11 +3,10 @@
 #include <unordered_map>
 #include <vector>
 #include <unordered_set>
-
 #include <stack>
 
-
 #include "Types.hpp"
+#include "Structs.hpp"
 #include "DbFile.hpp"
 #include "Page.hpp"
 
