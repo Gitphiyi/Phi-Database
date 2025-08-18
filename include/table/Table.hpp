@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Types.hpp"
-#include "Structs.hpp"
+#include "general/Types.hpp"
+#include "general/Structs.hpp"
 #include "PageCache.hpp"
 #include "DbFile.hpp"
 #include <vector>
@@ -11,7 +11,7 @@ namespace DB {
     class Table {
         public:
             //initialize new Table
-            Table(const string& name, const Orientation type, Schema& schema, PageCache& cache);
+            Table(const string& name, Schema& schema, PageCache& cache);
             //destructor for  removing table FD and closing pipe
 
 
@@ -23,13 +23,11 @@ namespace DB {
             string          print_metadata();
 
         private:
-            const Orientation       theOrientation;
             const string            theFileName;
             const string            thePath;
             std::vector<u64>        theFreePages; 
             Schema                  theSchema;    
             PageCache               theCache;
-
             void loadSchema(); //read first page
             void writeHeader(); // write schema & metadata to page 0
             u64  allocPage(); // grab a free page from file

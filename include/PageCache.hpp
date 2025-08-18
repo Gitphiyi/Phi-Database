@@ -5,10 +5,10 @@
 #include <unordered_set>
 #include <stack>
 
-#include "Types.hpp"
-#include "Structs.hpp"
+#include "general/Types.hpp"
+#include "general/Structs.hpp"
+#include "general/Page.hpp"
 #include "DbFile.hpp"
-#include "Page.hpp"
 
 namespace DB {
 

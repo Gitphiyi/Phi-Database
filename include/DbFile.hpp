@@ -2,8 +2,8 @@
 
 #include <unordered_map>
 
-#include "Page.hpp"
-#include "Types.hpp"
+#include "general/Page.hpp"
+#include "general/Types.hpp"
 
 namespace DB {
     class DbFile {

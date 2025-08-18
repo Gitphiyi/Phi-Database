@@ -54,11 +54,11 @@ namespace DB {
      */
     ssize_t DbFile::db_read_at(off_t offset, Page& buffer) {
         checkIfFileDescriptorValid(theDbFd);
-        ssize_t myReadBytes = pread(theDbFd, &buffer, sizeof(Page), offset * PAGE_SIZE);
+        ssize_t myReadBytes = pread(theDbFd, &buffer, PAGE_SIZE, offset * PAGE_SIZE);
         if(myReadBytes == 0) {
             std::cout << "EOF\n";
         }
-        if(myReadBytes != PAGE_SIZE + PAGE_METADATA) {
+        if(myReadBytes != PAGE_SIZE) {
             perror("Did not read enough bytes");
             return -1;
         }
@@ -68,7 +68,7 @@ namespace DB {
 
     ssize_t DbFile::read_at(off_t offset, Page& buffer, int fd) {
         checkIfFileDescriptorValid(fd);
-        ssize_t myReadBytes = pread(fd, &buffer, sizeof(Page), offset * PAGE_SIZE);
+        ssize_t myReadBytes = pread(fd, &buffer, PAGE_SIZE, offset * PAGE_SIZE);
         if(myReadBytes == 0) {
             std::cout << "EOF\n";
         }

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <new>
 
-#include "Page.hpp"
+#include "general/Page.hpp"
 #include "DbFile.hpp"
 #include "PageCache.hpp"
 

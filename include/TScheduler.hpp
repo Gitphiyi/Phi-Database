@@ -1,25 +1,25 @@
 #pragma once
 
+#include <unordered_map>
 #include <vector>
 #include <iostream>
 #include <mutex>
 
 #include "TLogger.hpp"
-#include "Types.hpp"
-#include "Structs.hpp"
+#include "general/Types.hpp"
+#include "general/Structs.hpp"
 
 namespace DB {
     class TScheduler {
         public: 
-            TScheduler(TLogger& tLogger);
-            void add_op(Operation op);
-            void schedule_transactions(); //scheduling of operations so they don't mess up
-            void receive_transaction(std::vector<Operation> transaction);
-            void send_transaction();
-            void pop_op(Operation op);
+            TScheduler();
+            void schedule_transaction(); //scheduling of operations so they don't mess up
+            void receive_ops(std::vector<Operation> transaction);
+            void clear_scheduler();
 
         private:
-            TLogger&                theTLogger;
-            std::vector<Operation>  theOperations;
+            std::unordered_map<u16, std::vector<Operation>>     theTransactions;
+            
+            std::vector<Operation> order_transactions();
     };
 }

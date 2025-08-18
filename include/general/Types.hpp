@@ -17,3 +17,9 @@ enum Orientation {
     COLUMN,
     ROW
 };
+
+enum OpType {
+    READ,
+    WRITE,
+    CREATE
+};

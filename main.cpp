@@ -2,8 +2,8 @@
 #include <cstddef>
 #include <sys/stat.h>
 
-#include "Types.hpp"
-#include "Page.hpp"
+#include "general/Types.hpp"
+#include "general/Page.hpp"
 #include "DbFile.hpp"
 #include "Database.hpp"
 #include "PageCache.hpp"
@@ -58,9 +58,8 @@ void pagecache_test(PageCache& cache, const string filepath) {
 
 void table_test(PageCache& cache) {
     int cols = 5;
-    Orientation orientation = ROW;
     Schema* schema = new Schema(cols);
-    Table table = Table("test_table", orientation, *schema, cache);
+    Table table = Table("test_table", *schema, cache);
 
 }
 
@@ -73,7 +72,6 @@ int main(int argc, char** argv) {
     DbFile dbFile = DbFile(filename, true);
     PageCache pgCache(numPages, dbFile);
     Database db("phi-db");
-    TScheduler ts = TScheduler();
 
     //dbfile_test();
     //pagecache_test(pgCache, filename);

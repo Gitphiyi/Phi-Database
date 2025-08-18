@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "Page.hpp"
 #include "Types.hpp"
 
@@ -19,6 +21,13 @@ struct SchemaCol {
         is_primary_key(primaryKey),
         is_unique(unique),
         default_val(defaultVal) {}
+    
+    size_t get_size() {
+      size_t sz = 0;
+      sz += name.length() + 1;
+      sz += sizeof(type) + sizeof(nullable) + sizeof(default_val) + sizeof(is_primary_key) + sizeof(is_unique);
+      return sz;
+    }
 };
 
 struct Schema {
@@ -37,12 +46,33 @@ struct Schema {
   {
     columns.emplace_back(name, type, nullable, primaryKey, unique, defaultVal);
   }
+
+  size_t get_size() {
+    size_t sz = 0;
+    for(SchemaCol col : columns) {
+      sz += col.get_size();
+    }
+    return sz;
+  }
 };
 
 struct Operation {
-  string  table;
-  string  transaction_id;
+  u32     transaction_id;
+  OpType  type;
   string  filename;
   Page&   buffer;
-  int     (*file_op)(string, Page&);
+  int     (PageCache::*file_op)(string, Page&);
+};
+
+struct TableMetadataHeader {
+  string name;
+  Schema& schema;
+  TableMetadataHeader(const string name, Schema schema) : name(name), schema(schema) {}
+
+  size_t get_size() {
+    size_t sz = 0;
+    sz += name.length() + 1; //add terminator byte at end
+    sz += schema.get_size();
+    return sz;
+  }
 };
