@@ -21,5 +21,8 @@ enum Orientation {
 enum OpType {
     READ,
     WRITE,
-    CREATE
+    CREATE,
+    LOCK,
+    UNLOCK,
+    COMMIT
 };

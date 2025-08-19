@@ -56,11 +56,12 @@ struct Schema {
   }
 };
 
+//includes locking, table ops, commits, etc.
 struct Operation {
   u32     transaction_id;
   OpType  type;
   string  filename;
-  Page&   buffer;
+  Page*   buffer;
   int     (PageCache::*file_op)(string, Page&);
 };
 

@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <vector>
+#include <unordered_set>
 #include <iostream>
 
 #include "general/Types.hpp"
@@ -14,19 +15,20 @@
 namespace DB {
     class TLogger {
         public:
-            TLogger(Table& table, PageCache& cache, Database& database, TScheduler& scheduler);
+            TLogger(PageCache& cache, Database& database, TScheduler& scheduler);
             void add_ops(std::vector<Operation> operations);
+            void retrieve_dests(); //get set of destinations that could have transaction issues
             void flush_ops();
             void clear_ops();
             void print();
 
         private:
-            PageCache&              theCache;
-            Table&                  theTable;
-            Database&               theDatabase;
-            TScheduler&             theScheduler;
-            std::deque<Operation>   theOps;
-            bool                    theFlushedStatus;
+            PageCache&                      theCache;
+            Database&                       theDatabase;
+            TScheduler&                     theScheduler;
+            std::unordered_set<string*>     theDestSet;
+            std::deque<Operation*>          theOps;
+            bool                            theFlushedStatus;
 
     };
 }
