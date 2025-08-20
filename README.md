@@ -1,11 +1,8 @@
 # Phi-Database
+Fully functional relational database with SQL Compiler, Transaction Processing, Transaction Logging, Persistent Storage, Page Caching, and all Database Operations. Optimizing in-memory operations and making it distributed TBD.
 
 ## Build System
-This project is using Bazel as a build system, and thus, every component is in a subfolder. The folder structure of tests is exactly the same as the folder structure in src. To run any tests on a component run the shell command 
-<br>
-bazel test --cxxopt=-std=c++17 --test_output=all //tests/**component name**:**component name**_test
+This project used to use Bazel. Turns out Bazel was not right fit, so instead I used CMake!
 
-For example, the shell command to run the dbfile tests is:
-<br>
-bazel test --cxxopt=-std=c++17 --test_output=all //tests/dbfile:dbfile_test
+
 
