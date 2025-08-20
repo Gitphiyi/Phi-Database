@@ -21,13 +21,55 @@ std::vector<Token> tokenize_query(string& query) {
             i++;
             continue;
         }
-        //check if it is keyword or not
+        //Identifier/Keyword
         if(isalpha(c)) {
-
+            size_t start = i;
+            char temp = query[i];
+            while(i < query.length() && (isalpha(temp) || temp == '_')) {
+                i++;
+            }
+            string str = query.substr(start, start - i);
+            if(keywords.contains(str)) {
+                tokens.push_back(Token(KEYWORD, str));
+            } else {
+                tokens.push_back(Token(IDENTIFIER, str));
+            }
         }
         //set identifier for token
-        if(isnumber(c)) {
+        else if(isnumber(c)) {
+            size_t start = i;
+            char temp = query[i];
+            while(i < query.length() && isnumber(temp)) {
+                i++;
+            }
+            tokens.push_back(Token(NUMBER, query.substr(start, i-start)));
+        }
+        //string literal
+        else if(c == '\'') {
+            i++;
+            size_t start = i;
+            while (i < input.size() && input[i] != '\'') i++;
+            tokens.push_back({STRING, input.substr(start, i - start)});
+            i++; //skip last apostrophe
+        }
+        // Operators
+        else if (c == '=' || c == '>' || c == '<') {
+            std::string op(1, c);
+            if (i + 1 < input.size() && (input[i+1] == '=')) {
+                op.push_back('=');
+                i++;
+            }
+            tokens.push_back({OPERATOR, op});
+            i++;
+        }
 
+        // Symbols
+        else if (c == ',' || c == ';' || c == '(' || c == ')') {
+            tokens.push_back({SYMBOL, std::string(1, c)});
+            i++;
+        }
+        else {
+            throw std::runtime_error("Unexpected character in SQL: " + std::string(1, c));
         }
     }
     return tokens;
