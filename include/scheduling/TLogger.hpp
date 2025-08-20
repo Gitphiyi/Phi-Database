@@ -10,13 +10,13 @@
 #include "PageCache.hpp"
 #include "table/Table.hpp"
 #include "Database.hpp"
-#include "TScheduler.hpp"
+#include "scheduling/ScheduleStructs.hpp"
 
 namespace DB {
     class TLogger {
         public:
             TLogger(PageCache& cache, Database& database, TScheduler& scheduler);
-            void add_ops(std::vector<Operation> operations);
+            void add_ops(std::vector<Operation>& operations);
             void retrieve_dests(); //get set of destinations that could have transaction issues
             void flush_ops();
             void clear_ops();

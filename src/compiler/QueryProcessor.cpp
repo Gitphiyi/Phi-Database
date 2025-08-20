@@ -12,7 +12,7 @@ std::vector<Token> tokenize_query(string& query) {
 
     //lower case query in place
     std::transform(query.begin(), query.end(), query.begin(),
-    [](unsigned char c){ return std::tolower(c); }); 
+    [](unsigned char c){ return std::toupper(c); }); 
 
     size_t i = 0;
     while(i < query.length()) {
@@ -48,14 +48,14 @@ std::vector<Token> tokenize_query(string& query) {
         else if(c == '\'') {
             i++;
             size_t start = i;
-            while (i < input.size() && input[i] != '\'') i++;
-            tokens.push_back({STRING, input.substr(start, i - start)});
+            while (i < query.size() && query[i] != '\'') i++;
+            tokens.push_back({STRING, query.substr(start, i - start)});
             i++; //skip last apostrophe
         }
         // Operators
         else if (c == '=' || c == '>' || c == '<') {
             std::string op(1, c);
-            if (i + 1 < input.size() && (input[i+1] == '=')) {
+            if (i + 1 < query.size() && (query[i+1] == '=')) {
                 op.push_back('=');
                 i++;
             }

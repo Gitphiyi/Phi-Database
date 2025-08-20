@@ -56,19 +56,10 @@ struct Schema {
   }
 };
 
-//includes locking, table ops, commits, etc.
-struct Operation {
-  u32     transaction_id;
-  OpType  type;
-  string  filename;
-  Page*   buffer;
-  int     (PageCache::*file_op)(string, Page&);
-};
-
 struct TableMetadataHeader {
   string name;
   Schema& schema;
-  TableMetadataHeader(const string name, Schema schema) : name(name), schema(schema) {}
+  TableMetadataHeader(const string& Name, Schema& Schema) : name(Name), schema(Schema) {}
 
   size_t get_size() {
     size_t sz = 0;
