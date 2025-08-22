@@ -5,91 +5,91 @@
 #include <cctype>
 #include <string>
 
-using namespace DB;
+namespace DB {
+    std::vector<Token> tokenize_query(string& query) {
+        std::vector<Token> tokens;
 
-std::vector<Token> tokenize_query(string& query) {
-    std::vector<Token> tokens;
+        //lower case query in place
+        std::transform(query.begin(), query.end(), query.begin(),
+        [](unsigned char c){ return std::toupper(c); }); 
 
-    //lower case query in place
-    std::transform(query.begin(), query.end(), query.begin(),
-    [](unsigned char c){ return std::toupper(c); }); 
-
-    size_t i = 0;
-    while(i < query.length()) {
-        char c = query[i];
-        if(isspace(c)) {
-            i++;
-            continue;
-        }
-        //Identifier/Keyword
-        if(isalpha(c)) {
-            size_t start = i;
-            char temp = query[i];
-            while(i < query.length() && (isalpha(temp) || temp == '_')) {
+        size_t i = 0;
+        while(i < query.length()) {
+            char c = query[i];
+            if(isspace(c)) {
+                i++;
+                continue;
+            }
+            //Identifier/Keyword
+            if(isalpha(c)) {
+                size_t start = i;
+                char temp = query[i];
+                while(i < query.length() && (isalpha(temp) || temp == '_')) {
+                    i++;
+                }
+                string str = query.substr(start, start - i);
+                if(keywords.contains(str)) {
+                    tokens.push_back(Token(KEYWORD, str));
+                } else {
+                    tokens.push_back(Token(IDENTIFIER, str));
+                }
+            }
+            //set identifier for token
+            else if(isnumber(c)) {
+                size_t start = i;
+                char temp = query[i];
+                while(i < query.length() && isnumber(temp)) {
+                    i++;
+                }
+                tokens.push_back(Token(NUMBER, query.substr(start, i-start)));
+            }
+            //string literal
+            else if(c == '\'') {
+                i++;
+                size_t start = i;
+                while (i < query.size() && query[i] != '\'') i++;
+                tokens.push_back({STRING, query.substr(start, i - start)});
+                i++; //skip last apostrophe
+            }
+            // Operators
+            else if (c == '=' || c == '>' || c == '<') {
+                std::string op(1, c);
+                if (i + 1 < query.size() && (query[i+1] == '=')) {
+                    op.push_back('=');
+                    i++;
+                }
+                tokens.push_back({OPERATOR, op});
                 i++;
             }
-            string str = query.substr(start, start - i);
-            if(keywords.contains(str)) {
-                tokens.push_back(Token(KEYWORD, str));
-            } else {
-                tokens.push_back(Token(IDENTIFIER, str));
-            }
-        }
-        //set identifier for token
-        else if(isnumber(c)) {
-            size_t start = i;
-            char temp = query[i];
-            while(i < query.length() && isnumber(temp)) {
-                i++;
-            }
-            tokens.push_back(Token(NUMBER, query.substr(start, i-start)));
-        }
-        //string literal
-        else if(c == '\'') {
-            i++;
-            size_t start = i;
-            while (i < query.size() && query[i] != '\'') i++;
-            tokens.push_back({STRING, query.substr(start, i - start)});
-            i++; //skip last apostrophe
-        }
-        // Operators
-        else if (c == '=' || c == '>' || c == '<') {
-            std::string op(1, c);
-            if (i + 1 < query.size() && (query[i+1] == '=')) {
-                op.push_back('=');
-                i++;
-            }
-            tokens.push_back({OPERATOR, op});
-            i++;
-        }
 
-        // Symbols
-        else if (c == ',' || c == ';' || c == '(' || c == ')') {
-            tokens.push_back({SYMBOL, std::string(1, c)});
-            i++;
+            // Symbols
+            else if (c == ',' || c == ';' || c == '(' || c == ')') {
+                tokens.push_back({SYMBOL, std::string(1, c)});
+                i++;
+            }
+            else {
+                throw std::runtime_error("Unexpected character in SQL: " + std::string(1, c));
+            }
         }
-        else {
-            throw std::runtime_error("Unexpected character in SQL: " + std::string(1, c));
-        }
+        return tokens;
     }
-    return tokens;
+
+    //creates AST from tokens
+    void parse_syntax(std::vector<Token> tokens) {
+
+    }
+
+    //checks AST to make sure all table/cols exist, type checking, validate aggregates, etc.
+    void analyze_semantics() {
+
+    }
+
+    //convert AST to relational algebra tree
+    void convert_to_ra() {
+
+    }
+
+    // optionally optimize plan
+
+    //hand off ra queries to table to be executed as table ops
 }
-
-//creates AST from tokens
-void parse_syntax(std::vector<Token> tokens) {
-
-}
-
-//checks AST to make sure all table/cols exist, type checking, validate aggregates, etc.
-void analyze_semantics() {
-
-}
-
-//convert AST to relational algebra tree
-void convert_to_ra() {
-
-}
-
-// optionally optimize plan
-
-//hand off ra queries to table to be executed as table ops

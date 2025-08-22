@@ -38,10 +38,5 @@ namespace DB {
         
     };
 
-    class QueryProcessor {
-        public:
-
-        private:
-            string  query;
-    };
+    std::vector<Token> tokenize_query(string& query);
 }
