@@ -18,14 +18,21 @@ namespace DB {
         "CAST", "CASE", "WHEN", "THEN", "ELSE", "END"
     };
 
+    const std::unordered_set<string> comparison_ops = {
+        "=", ">", "<", ">=", "<="
+    };
+
+    const std::unordered_set<string> symbols = {
+        "(", ")", ",", ";", "", "*"
+    };
+
     enum TokenType {
         KEYWORD,
         IDENTIFIER,
         NUMBER,
         STRING,
-        SYMBOL,     // (, ), ,, ;, etc
-        OPERATOR,   // =, >, <, >=, <=
-        END
+        SYMBOL,   
+        OPERATOR,
     };
 
     struct Token {
@@ -35,7 +42,6 @@ namespace DB {
 
     struct Query {
         string query;
-        
     };
 
     std::vector<Token> tokenize_query(string& query);

@@ -8,6 +8,7 @@
 #include "Database.hpp"
 #include "PageCache.hpp"
 #include "scheduling/TScheduler.hpp"
+#include "compiler/QueryProcessor.hpp"
 
 using namespace DB;
 
@@ -63,6 +64,14 @@ using namespace DB;
 
 // }
 
+void test_query_processor(string query) {
+    std::vector<Token> tokens = tokenize_query(query);
+    std::cout<< "tokens: ";
+    for(Token t : tokens) {
+        std::cout << "[" << t.type << "] " << t.value << ", ";
+    }
+    std::cout << std::endl;
+}
 int main(int argc, char** argv) {
 //     const string filename = "db/hi.db";
 //     mkdir("db", 0755);
@@ -76,5 +85,7 @@ int main(int argc, char** argv) {
 //     //dbfile_test();
 //     //pagecache_test(pgCache, filename);
 //     table_test(pgCache);
+    string query = "SELECT * from table Where 1 = 1;";
+    test_query_processor(query);
     return 0;
 }

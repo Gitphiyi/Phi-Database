@@ -1,5 +1,6 @@
 #include "compiler/QueryProcessor.hpp"
 
+#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <cctype>
@@ -17,42 +18,47 @@ namespace DB {
         while(i < query.length()) {
             char c = query[i];
             if(isspace(c)) {
+                std::cout << "space \n";
                 i++;
                 continue;
             }
+
             //Identifier/Keyword
             if(isalpha(c)) {
                 size_t start = i;
-                char temp = query[i];
-                while(i < query.length() && (isalpha(temp) || temp == '_')) {
-                    i++;
+                while(i < query.length() && (isalpha(query[i]) || query[i] == '_')) { 
+                    i++; 
                 }
-                string str = query.substr(start, start - i);
+                string str = query.substr(start, i - start);
                 if(keywords.contains(str)) {
                     tokens.push_back(Token(KEYWORD, str));
                 } else {
                     tokens.push_back(Token(IDENTIFIER, str));
                 }
+                std::cout << str << std::endl;
+                continue;
             }
+
             //set identifier for token
-            else if(isnumber(c)) {
+            if(isnumber(c)) {
                 size_t start = i;
-                char temp = query[i];
-                while(i < query.length() && isnumber(temp)) {
+                while(i < query.length() && isnumber(query[i])) {
                     i++;
                 }
                 tokens.push_back(Token(NUMBER, query.substr(start, i-start)));
+                continue;
             }
             //string literal
-            else if(c == '\'') {
+            if(c == '\'') {
                 i++;
                 size_t start = i;
                 while (i < query.size() && query[i] != '\'') i++;
                 tokens.push_back({STRING, query.substr(start, i - start)});
                 i++; //skip last apostrophe
+                continue;
             }
             // Operators
-            else if (c == '=' || c == '>' || c == '<') {
+            if (comparison_ops.contains(string(1, c))) {
                 std::string op(1, c);
                 if (i + 1 < query.size() && (query[i+1] == '=')) {
                     op.push_back('=');
@@ -60,16 +66,15 @@ namespace DB {
                 }
                 tokens.push_back({OPERATOR, op});
                 i++;
+                continue;
             }
-
             // Symbols
-            else if (c == ',' || c == ';' || c == '(' || c == ')') {
+            if (symbols.contains(string(1, c))) {
                 tokens.push_back({SYMBOL, std::string(1, c)});
                 i++;
+                continue;
             }
-            else {
-                throw std::runtime_error("Unexpected character in SQL: " + std::string(1, c));
-            }
+            throw std::runtime_error("Unexpected character in SQL: " + string(1, c));
         }
         return tokens;
     }
