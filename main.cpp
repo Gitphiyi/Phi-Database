@@ -85,7 +85,13 @@ int main(int argc, char** argv) {
 //     //dbfile_test();
 //     //pagecache_test(pgCache, filename);
 //     table_test(pgCache);
-    string query = "SELECT * from table Where 1 = 1;";
+
+    string query = "WITH seq AS (SELECT generate_series(1,10) AS n)"
+"SELECT u.id, u.jb 'user' 'name' AS uname, SUM(u.ints[2]) FILTER (WHERE u.n % 2=0) AS sum_even" 
+"FROM (SELECT n AS id, ARRAY[1,n,n*n]::int[] AS ints FROM seq) u"
+"JOIN LATERAL jsonb_array_elements_text t(tag) ON true "
+"WHERE u.jb AND u.id IN (SELECT n FROM seq WHERE n>5) "
+"ORDER BY u.id DESC LIMIT 5;";
     test_query_processor(query);
     return 0;
 }

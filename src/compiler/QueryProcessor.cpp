@@ -57,9 +57,21 @@ namespace DB {
                 i++; //skip last apostrophe
                 continue;
             }
-            // Operators
-            if (comparison_ops.contains(string(1, c))) {
+            // Symbols
+            if (symbols.contains(string(1, c))) {
+                tokens.push_back({SYMBOL, std::string(1, c)});
+                i++;
+                continue;
+            }
+            // Rest can only be operators or error
+            if (sql_ops.contains(string(1, c)) || c == ':') {
                 std::string op(1, c);
+                if(c == ':' && i+1 < query.length() && query[i+1] == ':') {
+                    tokens.push_back({OPERATOR, "::"});
+                    i += 2;
+                    continue;
+                } else { goto error; }
+
                 if (i + 1 < query.size() && (query[i+1] == '=')) {
                     op.push_back('=');
                     i++;
@@ -68,12 +80,7 @@ namespace DB {
                 i++;
                 continue;
             }
-            // Symbols
-            if (symbols.contains(string(1, c))) {
-                tokens.push_back({SYMBOL, std::string(1, c)});
-                i++;
-                continue;
-            }
+            error: 
             throw std::runtime_error("Unexpected character in SQL: " + string(1, c));
         }
         return tokens;

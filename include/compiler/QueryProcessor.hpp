@@ -18,12 +18,12 @@ namespace DB {
         "CAST", "CASE", "WHEN", "THEN", "ELSE", "END"
     };
 
-    const std::unordered_set<string> comparison_ops = {
-        "=", ">", "<", ">=", "<="
+    const std::unordered_set<string> sql_ops = {
+        "<>", "=", ">", "<", ">=", "<=", "/", "%", "+", "-", "::", "||"
     };
 
     const std::unordered_set<string> symbols = {
-        "(", ")", ",", ";", "", "*"
+        "(", ")", ",", ".", ";", "", "*", "[", "]"
     };
 
     enum TokenType {
