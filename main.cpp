@@ -8,7 +8,7 @@
 #include "Database.hpp"
 #include "PageCache.hpp"
 #include "scheduling/TScheduler.hpp"
-#include "compiler/QueryProcessor.hpp"
+#include "sql-compiler/QueryProcessor.hpp"
 
 using namespace DB;
 
