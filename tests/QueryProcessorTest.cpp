@@ -1,4 +1,4 @@
-#include "compiler/QueryProcessor.hpp"
+#include "sql-compiler/QueryProcessor.hpp"
 #include <gtest/gtest.h>
 #include <vector>
 

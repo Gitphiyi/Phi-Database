@@ -8,10 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-fsanitize=address)
 add_link_options(-fsanitize=address)
 
-set(SOURCES
-  main.cpp
-  examples/compilers-examples.cpp
-)
+option(USE_PG_QUERY "Enable integration with libpg_query (Postgres parser)" ON)
 
 add_library( dblib STATIC 
     src/sql-compiler/QueryProcessor.cpp
@@ -23,6 +20,7 @@ add_library( dblib STATIC
 )
 target_include_directories(dblib PUBLIC ${PROJECT_SOURCE_DIR}/include) 
 #directories refers to folder so any #include refers to the include folder
+
 
 # --- Examples ---
 # These examples are for in development testing of components and showing code of how these components are to be used

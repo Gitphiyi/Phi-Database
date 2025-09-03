@@ -21,6 +21,7 @@ namespace DB {
             void            write_page(u64 pageNum);
             u64             read(u64 pageNum, u16 rowNum);
             string          print_metadata();
+            Schema*         get_record(int rid); //takes record id and returns the record
 
         private:
             const string            theFileName;
