@@ -1,11 +1,12 @@
+#include "general/Page.hpp"
+#include "page-manager/DbFile.hpp"
+#include "page-manager/PageCache.hpp"
+
 #include <unordered_map>
 #include <stack>
 #include <iostream>
 #include <new>
 
-#include "general/Page.hpp"
-#include "DbFile.hpp"
-#include "PageCache.hpp"
 
 namespace DB {
     PageCache::PageCache(u32 numPages, DbFile& fileApi)  : 

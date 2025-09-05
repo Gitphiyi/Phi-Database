@@ -2,8 +2,8 @@
 
 #include "general/Types.hpp"
 #include "general/Structs.hpp"
-#include "PageCache.hpp"
-#include "DbFile.hpp"
+#include "page-manager/PageCache.hpp"
+#include "page-manager/DbFile.hpp"
 #include <vector>
 #include <string>
 
@@ -13,8 +13,6 @@ namespace DB {
             //initialize new Table
             Table(const string& name, Schema& schema, PageCache& cache);
             //destructor for  removing table FD and closing pipe
-
-
             Table&          get_table(const string& name, PageCache& bufPool); //get table metadata from disk
             //return page number where row is placed. row byte size must equal schema
             u64             insert();
