@@ -43,17 +43,6 @@ namespace DB {
             size_t cursor;
     };
 
-
-    class Selection : public StorageOps {
-        public: 
-            Selection(StorageOps* child, std::function<bool(const Row*)> cond);
-            void open() override;
-            void close() override;
-        protected:
-            StorageOps*                         childOp;
-            std::function<bool(const Row&)>     condition;
-    };
-
     // struct Join : StorageOps {
     //     Join(Table);
     // };

@@ -15,6 +15,7 @@ add_library( dblib STATIC
     src/storage-manager/Table.cpp
     src/page-manager/PageCache.cpp
     src/storage-manager/ops/StorageOps.cpp
+    src/storage-manager/ops/Selection.cpp
     # src/transaction-processor/TScheduler.cpp
 )
 target_include_directories(dblib PUBLIC ${PROJECT_SOURCE_DIR}/include) # includes headers publicly, so any target that links dblib will also include headers
