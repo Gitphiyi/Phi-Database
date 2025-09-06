@@ -10,7 +10,7 @@ using u16 = std::uint16_t;
 using u8  = std::uint8_t;
 using size_t = std::size_t;
 using string = std::string;
-using datatype = std::variant<int, float, std::string, bool, int64_t>;
+using datatype = std::variant<int, float, string, bool, int64_t, double>;
 
 
 enum Orientation {

@@ -1,5 +1,6 @@
 set(STORAGE_SRCS
-    "${CMAKE_CURRENT_SOURCE_DIR}/table.cpp"   
+    "${CMAKE_CURRENT_SOURCE_DIR}/table.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/storageops.cpp"      
 )
 
 foreach(src IN LISTS STORAGE_SRCS)

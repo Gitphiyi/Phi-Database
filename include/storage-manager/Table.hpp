@@ -19,7 +19,7 @@ namespace DB {
             //return page number where row is placed. row byte size must equal schema
             RowId               insert_row();
             Row*                read_row();
-            std::vector<Row>    table_scan();
+            std::vector<Row*>   scan() const;
 
             // void            write_page(u64 pageNum);
             u64             read(u64 pageNum, u16 rowNum);
