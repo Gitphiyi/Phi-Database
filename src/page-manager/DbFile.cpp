@@ -11,9 +11,9 @@ namespace DB {
 
     static DbFile* singletonInstance = nullptr;
 
-    void DbFile::initialize(const string& path, bool ifMissing) {
+    void DbFile::initialize(bool ifMissing) {
         if (singletonInstance == nullptr) {
-            singletonInstance = new DbFile(path, ifMissing);
+            singletonInstance = new DbFile(ifMissing);
         }
     }
 
@@ -30,7 +30,7 @@ namespace DB {
         }
     }
 
-    DbFile::DbFile(const string& path, bool ifMissing) : 
+    DbFile::DbFile(bool ifMissing) : 
     theDbFd(-1), 
     theFdMap()
     {
@@ -38,6 +38,7 @@ namespace DB {
         if (ifMissing) {
             flags |= O_CREAT;
         }
+        string path = "database-files";
         theDbFd = ::open(path.c_str(), flags, 0644); //0644 is octal for rw for all users
         if (theDbFd < 0) {
             throw std::system_error(errno, std::generic_category(), "File could not be created");

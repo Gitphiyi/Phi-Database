@@ -16,7 +16,7 @@ namespace DB {
         public:
             const u64 CACHE_SIZE;
             const u32 NUM_PAGES;
-            PageCache(u32 numPages, DbFile& fileApi);
+            PageCache(u32 numPages);
 
             Page&                               read(u32 pageId, Page& buffer, const string& filepath); 
             bool                                write_through(Page& page, const string& filepath); // write through

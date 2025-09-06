@@ -10,10 +10,10 @@ namespace DB {
         public:
             enum LockMode { Shared, Exclusive };
 
-            DbFile(const string& path, bool ifMissing);
+            DbFile(bool ifMissing);
             ~DbFile();
 
-            static void initialize(const string& path, bool ifMissing);
+            static void initialize(bool ifMissing);
             static DbFile& getInstance();
             static void checkIfFileDescriptorValid(int aFd);
             

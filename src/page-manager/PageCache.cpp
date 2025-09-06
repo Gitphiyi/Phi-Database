@@ -9,10 +9,10 @@
 
 
 namespace DB {
-    PageCache::PageCache(u32 numPages, DbFile& fileApi)  : 
+    PageCache::PageCache(u32 numPages)  : 
         CACHE_SIZE(numPages * sizeof(Page)),
         NUM_PAGES(numPages),
-        theDbFile(fileApi)
+        theDbFile(DbFile::getInstance())
     {    
         thePageMap.reserve(NUM_PAGES); //reserve pages to avoid rehashing
         theFreePages.reserve(NUM_PAGES);

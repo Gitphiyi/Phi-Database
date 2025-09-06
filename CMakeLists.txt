@@ -12,7 +12,7 @@ add_library( dblib STATIC
     src/sql-compiler/QueryProcessor.cpp
     src/page-manager/DbFile.cpp 
     # src/Database.cpp
-    # src/storage-manager/Table.cpp
+    src/storage-manager/Table.cpp
     src/page-manager/PageCache.cpp
     # src/transaction-processor/TScheduler.cpp
 )

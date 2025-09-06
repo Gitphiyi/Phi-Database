@@ -26,11 +26,6 @@ struct StorageOps {
     virtual close() = 0 ;// closes all the resources
 }
 
-struct TableScan : StorageOps {
-    TableScan();
-    open(Table* table) override;
-}
-
 class Selection : StorageOps {
     public: 
         Selection();
