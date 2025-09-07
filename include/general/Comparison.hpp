@@ -1,8 +1,9 @@
 #pragma once
 
+#include "general/Types.hpp"
 #include <exception>
 namespace DB {
-    CondFn condfn_generator(string cond) {
+    inline CondFn condfn_generator(string cond) {
         if(cond == "="){
             return [=](datatype c, datatype o) { return c == o; };
         }

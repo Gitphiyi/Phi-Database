@@ -18,8 +18,6 @@ void test_table_scan() {
     auto cache = PageCache(10);
     const Table t = Table(table_name, schema, cache);
     SeqScan tableScan(t, 4);
-    NaiveSelection selector(&tableScan, condfn_generator("=")); 
-    auto res = selector.next();
 }
 
 void test_naive_selection() {
@@ -30,7 +28,7 @@ void test_naive_selection() {
     auto cache = PageCache(10);
     const Table t = Table(table_name, schema, cache);
     SeqScan tableScan(t, 4);
-    NaiveSelection selector(&tableScan, equals()); 
+    NaiveSelection selector(&tableScan, condfn_generator("<")); 
     auto res = selector.next();
     tableScan.print(res);
 }
