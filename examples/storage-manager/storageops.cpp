@@ -1,5 +1,6 @@
 #include "general/Structs.hpp"
 #include "general/Types.hpp"
+#include "general/Comparison.hpp"
 #include "storage-manager/Table.hpp"
 #include "storage-manager/ops/StorageOps.hpp"
 #include "storage-manager/ops/Selection.hpp"
@@ -17,7 +18,7 @@ void test_table_scan() {
     auto cache = PageCache(10);
     const Table t = Table(table_name, schema, cache);
     SeqScan tableScan(t, 4);
-    NaiveSelection selector(&tableScan, equals()); 
+    NaiveSelection selector(&tableScan, condfn_generator("=")); 
     auto res = selector.next();
 }
 

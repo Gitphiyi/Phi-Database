@@ -1,11 +1,10 @@
 # pragma once
 
 #include "general/Types.hpp"
+#include "general/Comparison.hpp"
 #include "storage-manager/ops/StorageOps.hpp"
 
 namespace DB {
-    CondFn equals();
-
     class Selection : public StorageOps {
         public: 
             Selection(StorageOps* child, CondFn cond);

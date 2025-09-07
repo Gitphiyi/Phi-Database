@@ -3,17 +3,6 @@
 #include <iostream>
 
 namespace DB {
-    CondFn equals() {
-        return [=](datatype c, datatype o) { return c == o; };
-    }
-    Selection::Selection(StorageOps* child, CondFn cond) : childOp(child), condition(cond) {}
-    void Selection::open() {
-        childOp->open();
-    }
-    void Selection::close() {
-        childOp->close();
-    }
-
     std::vector<Row*> NaiveSelection::next() {
         std::vector<Row*> result;
         auto batch_rows = childOp->next();
