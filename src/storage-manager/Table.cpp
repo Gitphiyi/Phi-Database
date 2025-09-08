@@ -6,22 +6,12 @@ using namespace DB;
 
 Table::Table(const string& name,
         Schema& schema, 
-        PageCache& cache
+        HeapFile& heapfile
         ) :
     theFileName(name),
     thePath("db/table/"+name),
-    theSchema(schema),
-    theCache(cache) {
-    DbFile& file_writer = DbFile::getInstance();
-    // file_writer.add_path(thePath);   
-    // Page* metadata = new Page(0);
-    // char* data_addr = reinterpret_cast<char*>(metadata->data);
-    // TableMetadataHeader myHeader(name, schema);
-
-    // memcpy(data_addr, &myHeader, myHeader.get_size());
-    // theCache.write_through(*metadata, theFileName);
-    // delete metadata;
-}
+    theSchema(schema)
+    {}
 std::vector<Row*> Table::scan() const {
     
     std::vector<Row*> batch;

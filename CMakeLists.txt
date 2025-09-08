@@ -6,14 +6,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-fsanitize=address)
 add_link_options(-fsanitize=address)
 
-#option(USE_PG_QUERY "Enable integration with libpg_query (Postgres parser)" ON)
-
 add_library( dblib STATIC 
-    src/sql-compiler/QueryProcessor.cpp
+    src/sql-compiler/Lexer.cpp
+
     src/page-manager/DbFile.cpp 
-    # src/Database.cpp
-    src/storage-manager/Table.cpp
     src/page-manager/PageCache.cpp
+
+    src/storage-manager/Table.cpp
     src/storage-manager/ops/StorageOps.cpp
     src/storage-manager/ops/Selection.cpp
     # src/transaction-processor/TScheduler.cpp

@@ -6,8 +6,14 @@
 
 namespace DB {
     struct HeapFile {
-        Page*               getPage(Page pid); 
-        std::vector<Row>    get_rows(RowId id); 
-        PageCache cache;
+        Page*               get_page(u32 pid); 
+        //table specific functions
+        //table just needs a way to get, insert, delete, update, and scan rows 
+        Row                 get_row(RowId id); 
+        RowId               insert_row(Row* row, u32 page);
+        void                delete_row(RowId rid);
+
+        PageCache& cache;
+
     };
 }

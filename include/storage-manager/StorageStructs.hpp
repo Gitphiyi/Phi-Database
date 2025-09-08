@@ -4,7 +4,7 @@
 #include <vector>
 
 struct RowId {
-    u64     pageId;
+    u32     pageId;
     u64     slotId;
 };
 

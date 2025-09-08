@@ -1,7 +1,5 @@
 #pragma once
 
-#include "general/Types.hpp"
-
 #include <unordered_set>
 
 namespace DB {
@@ -43,6 +41,4 @@ namespace DB {
     struct Query {
         string query;
     };
-
-    std::vector<Token> tokenize_query(string& query);
 }
