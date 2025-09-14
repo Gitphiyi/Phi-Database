@@ -5,14 +5,22 @@
 #include "sql-compiler/SqlAST.hpp"
 #include "sql-compiler/Types.hpp"
 #include <vector>
+#include <unordered_map>
 
 namespace DB {
-    std::unordered_set<string> start_tokens = {
-        "SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", "WITH"
+    using queryFunc = void(*)(SqlNode*, std::vector<Token>);
+
+    // Query Rules
+    //SELECT Statement grammer
+    void    select_query(SqlNode* root, std::vector<Token> tokens); // all queries start with SELECT and end with ;, have a FROM denoting a single table, optional WHERE condition, and can have multiple selected columns
+    bool    columns();
+
+    static std::unordered_map<string, queryFunc> start_tokens = {
+        {"SELECT", &select_query}
     };
 
     std::vector<SqlNode>                 create_SQL_AST(std::vector<Token> tokens);
-    
+    std::vector<RANode>                     convert_to_RA(std::vector<SqlNode> sql_ast);    
 
 //     <query> ::= "SELECT " <columns> " FROM " <name> <terminal> | "SELECT " <columns> " FROM " <name> " WHERE " <conditionList> <terminal>
 // <columns> ::= (<name> ", ")+ | "*"
@@ -25,8 +33,6 @@ namespace DB {
 // <letter> ::= [a-z]+ | [A-Z]+
 // <digit> ::= [1-9]+
 // <terminal> ::= ";"
-    // query rules
-    void    query(); // all queries start with SELECT and end with ;, have a FROM denoting a single table, optional WHERE condition, and can have multiple selected columns
-    bool    columns();
+
 
 }

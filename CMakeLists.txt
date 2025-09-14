@@ -8,6 +8,7 @@ add_link_options(-fsanitize=address)
 
 add_library( dblib STATIC 
     src/sql-compiler/Lexer.cpp
+    src/sql-compiler/Parser.cpp
 
     src/page-manager/DbFile.cpp 
     src/page-manager/PageCache.cpp
