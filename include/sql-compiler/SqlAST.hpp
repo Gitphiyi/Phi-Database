@@ -11,11 +11,12 @@ enum NodeType {
 };
 
 struct SqlNode {
-    NodeType                  type;
-    std::vector<string>     clauses{}; //depends on statement. Suppose this can be null
-    
-    u32                     start{0};
-    u32                     end{0};
-    std::vector<SqlNode*>      children{};
+    NodeType                    type;
+    std::vector<string>         clauses{}; //depends on statement. Suppose this can be null
+    string                      operator;
+
+    // u32                         start{0};
+    // u32                         end{0};
+    std::vector<SqlNode*>       children{};
     SqlNode(NodeType t) : type(t) {}
 };

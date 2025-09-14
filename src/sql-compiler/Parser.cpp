@@ -8,29 +8,13 @@ namespace DB {
         u32 curr_start = 0;
         u32 idx = 0;
         for (Token t : tokens) {
-            if(t.type == KEYWORD) {
-                if(t.value == "SELECT") {
-                    if(sql_statements.size() > 0) {
-                        sql_statements[sql_statements.size() - 1].end = idx;
-                    }
-                    sql_statements.emplace_back(SqlNode(SELECT_CLAUSE));
-                    curr_start = idx+1;
-                } 
-                else if(t.value == "FROM") {
-                    if(sql_statements.size() > 0) {
-                        sql_statements[sql_statements.size() - 1].end = idx;
-                    }
-                    sql_statements.emplace_back(SqlNode(FROM_CLAUSE));
-                }
-                else if(t.value == "WHERE") {
-                    if(sql_statements.size() > 0) {
-                        sql_statements[sql_statements.size() - 1].end = idx;
-                    }
-                    sql_statements.emplace_back(SqlNode(WHERE_CLAUSE));
-                }
-            }
-            idx += t.value.size();
+            if()
+            query();
         }
         return sql_statements;
+    }
+
+    void query() {
+
     }
 }
