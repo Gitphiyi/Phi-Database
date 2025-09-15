@@ -8,12 +8,12 @@
 #include <unordered_map>
 
 namespace DB {
-    using queryFunc = void(*)(SqlNode*, std::vector<Token>);
+    using queryFunc = void(*)(SqlNode*, std::vector<Token>&, int);
 
     // Query Rules
     //SELECT Statement grammer
-    void    select_query(SqlNode* root, std::vector<Token> tokens); // all queries start with SELECT and end with ;, have a FROM denoting a single table, optional WHERE condition, and can have multiple selected columns
-    bool    columns();
+    void    select_query(SqlNode* root, std::vector<Token>& tokens, int st); // all queries start with SELECT and end with ;, have a FROM denoting a single table, optional WHERE condition, and can have multiple selected columns
+    void    select_expression_query(SqlNode* root, std::vector<Token>& tokens, int st);
 
     static std::unordered_map<string, queryFunc> start_tokens = {
         {"SELECT", &select_query}
