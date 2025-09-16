@@ -1,4 +1,5 @@
 #include "sql-compiler/Parser.hpp"
+#include "general/Types.hpp"
 
 #include <iostream>
 
@@ -10,27 +11,42 @@ namespace DB {
         u32 curr_start = 0;
         u32 idx = 0;
         if(start_tokens.contains(tokens[0].value)) {
+            std::vector<string> stmt_aliases;
             sql_statements.emplace_back(SqlNode(tokens[0].value));
-            start_tokens[tokens[0].value](&sql_statements[0], tokens, 0); // run the statement dependent parser
+            start_tokens[tokens[0].value](&sql_statements[0], tokens, stmt_aliases, 0); // run the statement dependent parser
         }
         return sql_statements;
     }
 
-    void select_query(SqlNode* root, std::vector<Token>& tokens, int st) {
+    void sql_query(SqlNode* root, std::vector<Token>& tokens, std::vector<string>& aliases, int st) {
         //std::cout << "SELECT grammar query checker\n";
-        bool stop = false;
-        int i = 1;
+        int i = 0;
         std::cout << tokens[0].value << " size: " << tokens.size() << "\n";
 
         while ( i < tokens.size() && tokens[i].value != ";") {
-            std::cout << tokens[i].value << ", ";
+            std::cout << tokens[i].value << " ";
+            // For these conditional statements, determine the start and end tokens of the clause and recursively create
+            // nodes until it is over
             if(tokens[i].value == "SELECT") {
                 root->children.emplace_back(SqlNode("Select Clause"));
+                int parent_idx = root->children.size() - 1;
+                SqlNode* parent = &root->children[parent_idx];
+                int st = i + 1;
+                int end;
+                while(tokens[i].value != "FROM") {
+                    if(i >= tokens.size() || tokens[i].value == ";") {
+                        std::cout << "Cannot have SELECT statement without FROM clause";
+                        return;
+                    }
+                    ++i;
+                }
+                end = i;
+                select_query(parent, tokens, aliases, st, end);
             }
-            else if(tokens[i].value == "FROM") {
+            if(tokens[i].value == "FROM") {
                 root->children.emplace_back(SqlNode("From Clause"));
             } 
-            else if(tokens[i].value == "WHERE") {
+            if(tokens[i].value == "WHERE") {
                 root->children.emplace_back(SqlNode("Where Clause"));
             }
             // do one for GROUP BY
@@ -38,24 +54,60 @@ namespace DB {
         }
         std::cout << std::endl;
         level_sql_tree_print(root);
+        sql_tree_print(root);
     }
-    void select_expression_query(SqlNode* parent, std::vector<Token>& tokens, int st) {
-                int i = 1;
+    void select_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end) {
+        int i = st;
+        for(int i = st; i < end; i++) {
             // Check if duplicates should be added or not
             if(tokens[i].value == "DISTINCT" || tokens[i].value == "ALL") {
-
-            }
-            // Check if * is used
-            else if(tokens[i].value == "*") {
-
-            }
-            // start of new expression
-            else if(tokens[i].value == ",") {
-
+                parent->children.emplace_back(SqlNode("duplication operator"));
+                // do this or make it a field of the node
             }
             // should be a selection expression
             else {
-                
+                parent->children.emplace_back(SqlNode("Column"));
+                int parent_idx = parent->children.size() - 1;
+                SqlNode* expression_parent = &parent->children[parent_idx];
+                int expression_st = i;
+                int expression_end;
+                while(i < end) {
+                    if(tokens[i].value == ",") break;
+                    //std::cout << "make column node\n";
+                    ++i;
+                }
+                expression_end = i - 1;
+                select_expression_query(expression_parent, tokens, aliases, expression_st, expression_end);
             }
+        }
+    }
+    void select_expression_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end) {
+        // all expressions should be 3 tokens large at most
+        const int SELECT_EXPR_SZ = 3;
+        // is * operator
+        if(end - st + 1 == 1) {
+            if (tokens[st].value == "*") parent->children.emplace_back(SqlNode("All rows"));
+            else std::cout << "Select expression cannot be " << tokens[st].value << ". It must be * if it is one character";
+            return;
+        }
+        // is a column
+        if(end - st + 1 == SELECT_EXPR_SZ && tokens[st + 1].value == ".") {
+            parent->children.emplace_back(SqlNode("col from family name"));
+            return;
+        }
+        //uses an alias
+        int as_idx = -1;
+        for(int i = st; i < end; ++i) {
+            if (tokens[i].value == "AS") {
+                as_idx = i;
+                break;
+            }
+        }
+        if(as_idx != -1) {
+            parent->children.emplace_back(SqlNode("col and set alias"));
+            aliases.push_back(tokens[as_idx + 1].value);
+            return;
+        }
+        std::cout << "invalid selection expression. Token must be . or AS";
     }
 }

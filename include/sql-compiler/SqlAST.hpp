@@ -25,6 +25,18 @@ struct SqlNode {
     SqlNode(string t) : type(t) {}
 };
 
+inline void tree_print_helper(SqlNode* root, int level) {
+    std::string dashes(level, '-');
+    std::cout << dashes << "|" << root->type << "\n";
+    for(SqlNode& child : root->children) {
+        tree_print_helper(&child, level + 1);
+    }
+}
+static void sql_tree_print(SqlNode* root) {
+    std::cout << "Printing SQL AST: \n";
+    tree_print_helper(root, 0);
+}
+
 static void level_sql_tree_print(SqlNode* root) {
     std::cout << "Printing SQL AST in level order: \n";
     std::deque<SqlNode*> heap{};
@@ -37,10 +49,7 @@ static void level_sql_tree_print(SqlNode* root) {
             heap.pop_front();
 
             std::string dashes(level, '-');
-            if (level == 0)
-                std::cout << temp->type << "\n";
-            else
-                std::cout << dashes << "|" << temp->type << "\n";
+            std::cout << dashes << "|" << temp->type << "\n";
 
             for (SqlNode& child : temp->children) {
                 heap.push_back(&child);
