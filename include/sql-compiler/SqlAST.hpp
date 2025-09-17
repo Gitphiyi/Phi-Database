@@ -17,13 +17,15 @@ enum NodeType {
 
 struct SqlNode {
     string                      type;
+    string                      qualifier;
     std::vector<string>         clauses{}; //depends on statement. Suppose this can be null
     std::vector<SqlNode>        children{};
+    string                      alias;
 
     //FROM clause specific fields
     string                      join_type;
 
-    SqlNode(string t) : type(t), join_type("") {}
+    SqlNode(string t) : type(t), qualifier(""), alias(""), join_type("") {}
 };
 
 inline void tree_print_helper(SqlNode* root, const string& prefix = "", bool is_last = true, bool is_root = true) {
@@ -34,7 +36,12 @@ inline void tree_print_helper(SqlNode* root, const string& prefix = "", bool is_
         child_prefix += (is_last ? "     " : " │   ");
     }
     
-    std::cout << root->type << "\n";
+    std::cout << root->type;
+    if(root->type == "Column") {
+        if(root->alias != "") std::cout << " { alias: " << root->alias << " }";
+        if(root->qualifier != "") std::cout << " { qualifer: " << root->qualifier << " }";
+    }
+    std::cout << std::endl;
 
     for (size_t i = 0; i < root->children.size(); i++) {
         bool last_child = (i == root->children.size() - 1);
@@ -42,7 +49,7 @@ inline void tree_print_helper(SqlNode* root, const string& prefix = "", bool is_
     }
 }
 static void sql_tree_print(SqlNode* root) {
-    std::cout << "Printing SQL AST: \n";
+    std::cout << "\nPrinting SQL AST: \n";
     tree_print_helper(root, "", false, true);
 }
 

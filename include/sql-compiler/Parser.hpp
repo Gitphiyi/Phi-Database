@@ -18,11 +18,20 @@ namespace DB {
         {"SELECT", &sql_query}
     };
 
-    std::vector<SqlNode>                 create_SQL_AST(std::vector<Token> tokens);
-    std::vector<RANode>                     convert_to_RA(std::vector<SqlNode> sql_ast); 
-    void    select_query(SqlNode* root, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
-    void    select_expression_query(SqlNode* root, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
-    void    from_query(SqlNode* root, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
+    std::vector<SqlNode>    create_SQL_AST(std::vector<Token> tokens);
+    std::vector<RANode>     convert_to_RA(std::vector<SqlNode> sql_ast); 
+
+    //general queries
+    bool                    check_and_alias_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
+    void                    subquery_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
+
+    //select statement specific queries
+    void                    select_query(   SqlNode* root, std::vector<Token>& tokens, std::vector<string>& aliases, 
+                                            int st, int end);
+    void select_expression_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
+    void                    from_query(     SqlNode* root, std::vector<Token>& tokens, std::vector<string>& aliases, 
+                                            int st, int end);
+                                
    
 
 //     <query> ::= "SELECT " <columns> " FROM " <name> <terminal> | "SELECT " <columns> " FROM " <name> " WHERE " <conditionList> <terminal>

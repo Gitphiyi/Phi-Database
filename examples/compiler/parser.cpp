@@ -6,7 +6,7 @@ using namespace DB;
 int main() {
     string SQL = R"(SELECT DISTINCT *, u.id, bruh.name AS f
     FROM Users AS u
-    INNER JOIN Orders AS o ON u.id = o.user_id JOIN (SELECT c1 FROM Pooper)
+    INNER JOIN Orders AS o ON u.id = o.user_id JOIN (SELECT c1 FROM Pooper) , Table1
     WHERE u.age >= 30 AND o.price BETWEEN 100 AND 500
     ORDER BY u.name ASC;
     )";
