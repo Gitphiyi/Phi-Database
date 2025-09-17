@@ -22,6 +22,7 @@ namespace DB {
     std::vector<RANode>                     convert_to_RA(std::vector<SqlNode> sql_ast); 
     void    select_query(SqlNode* root, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
     void    select_expression_query(SqlNode* root, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
+    void    from_query(SqlNode* root, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
    
 
 //     <query> ::= "SELECT " <columns> " FROM " <name> <terminal> | "SELECT " <columns> " FROM " <name> " WHERE " <conditionList> <terminal>

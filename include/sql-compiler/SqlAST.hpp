@@ -16,25 +16,34 @@ enum NodeType {
 };
 
 struct SqlNode {
-    string                    type;
+    string                      type;
     std::vector<string>         clauses{}; //depends on statement. Suppose this can be null
+    std::vector<SqlNode>        children{};
 
-    // u32                         start{0};
-    // u32                         end{0};
-    std::vector<SqlNode>       children{};
-    SqlNode(string t) : type(t) {}
+    //FROM clause specific fields
+    string                      join_type;
+
+    SqlNode(string t) : type(t), join_type("") {}
 };
 
-inline void tree_print_helper(SqlNode* root, int level) {
-    std::string dashes(level, '-');
-    std::cout << dashes << "|" << root->type << "\n";
-    for(SqlNode& child : root->children) {
-        tree_print_helper(&child, level + 1);
+inline void tree_print_helper(SqlNode* root, const string& prefix = "", bool is_last = true, bool is_root = true) {
+    string child_prefix;
+    if(!is_root) {
+        std::cout << prefix << (is_last ? " └── " : " ├── ");
+        child_prefix = prefix;
+        child_prefix += (is_last ? "     " : " │   ");
+    }
+    
+    std::cout << root->type << "\n";
+
+    for (size_t i = 0; i < root->children.size(); i++) {
+        bool last_child = (i == root->children.size() - 1);
+        tree_print_helper(&root->children[i], child_prefix, last_child, false);
     }
 }
 static void sql_tree_print(SqlNode* root) {
     std::cout << "Printing SQL AST: \n";
-    tree_print_helper(root, 0);
+    tree_print_helper(root, "", false, true);
 }
 
 static void level_sql_tree_print(SqlNode* root) {
@@ -48,8 +57,8 @@ static void level_sql_tree_print(SqlNode* root) {
             SqlNode* temp = heap.front();
             heap.pop_front();
 
-            std::string dashes(level, '-');
-            std::cout << dashes << "|" << temp->type << "\n";
+            std::string dashes(level*2, '-');
+            std::cout << "|" << dashes << temp->type << "\n";
 
             for (SqlNode& child : temp->children) {
                 heap.push_back(&child);
@@ -62,8 +71,9 @@ static void level_sql_tree_print(SqlNode* root) {
 struct RANode {
     NodeType                    type;
     std::vector<string>         clauses{}; //depends on statement. Suppose this can be null
-    // u32                         start{0};
-    // u32                         end{0};
-    std::vector<SqlNode>       children{};
-    RANode(NodeType t) : type(t) {}
+    std::vector<SqlNode>        children{};
+    //FROM clause fields
+    string                      join_type;
+
+    RANode(NodeType t) : type(t), join_type("") {}
 };

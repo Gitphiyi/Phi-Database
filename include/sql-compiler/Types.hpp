@@ -24,6 +24,10 @@ namespace DB {
         "(", ")", ",", ".", ";", "", "*", "[", "]"
     };
 
+    const std::unordered_set<string> join_types = {
+        "INNER", "OUTER", "LEFT", "RIGHT", "NATURAL", "FULL"
+    };
+
     enum TokenType {
         KEYWORD,
         IDENTIFIER,

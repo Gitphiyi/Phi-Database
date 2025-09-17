@@ -45,6 +45,19 @@ namespace DB {
             }
             if(tokens[i].value == "FROM") {
                 root->children.emplace_back(SqlNode("From Clause"));
+                int parent_idx = root->children.size() - 1;
+                SqlNode* parent = &root->children[parent_idx];
+                int st = i + 1;
+                int end;
+                while(tokens[i].value != "WHERE" && tokens[i].value != ";") {
+                    if(i >= tokens.size()) {
+                        std::cout << "The FROM clause doesn't end with ; or WHERE";
+                        return;
+                    }
+                    ++i;
+                }
+                end = i;
+                from_query(parent, tokens, aliases, st, end);
             } 
             if(tokens[i].value == "WHERE") {
                 root->children.emplace_back(SqlNode("Where Clause"));
@@ -109,5 +122,24 @@ namespace DB {
             return;
         }
         std::cout << "invalid selection expression. Token must be . or AS";
+    }
+
+    void from_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end) {
+        std::unordered_set<int> join_positions{};
+        for(int i = st; i < end; i++) {
+            if(tokens[i].type == KEYWORD && tokens[i].value == "JOIN") {
+                join_positions.insert(i);
+            }
+        }
+
+        if(join_positions.size() == 0) {
+        }
+        // there should be only one column or just cross joins via commas
+        else {
+            for(int join_pos : join_positions) {
+                std::cout << "JOIN exists at idx: " << join_pos << ", ";
+            }
+            std::cout << std::endl;
+        }
     }
 }
