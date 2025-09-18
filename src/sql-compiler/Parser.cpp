@@ -73,7 +73,8 @@ namespace DB {
         // Should Check for SQL hints
         // Check if duplicates should be added or not
         if(tokens[i].value == "DISTINCT" || tokens[i].value == "ALL") {
-            parent->children.emplace_back(SqlNode("DISTINCT/ALL"));
+            parent->children.emplace_back(SqlNode("Select Modifier"));
+            parent->children[0].qualifier = tokens[i].value;
             ++i;
         }
         // Should just be columns now
@@ -97,7 +98,6 @@ namespace DB {
         const int SELECT_EXPR_SZ = 3;
         // is * operator or a single column
         if(end - st + 1 == 1) {
-            std::cout<<"column is = " << tokens[st].value;
             if (tokens[st].value == "*") parent->qualifier = "*";
             else if(tokens[st].type == IDENTIFIER) parent->qualifier = tokens[st].value;
             else std::cout << "Select expression cannot be " << tokens[st].value << ". It must be * if it is one character\n";
@@ -112,8 +112,7 @@ namespace DB {
             return;
         }
         //checks for alias
-        if(check_and_alias_query(parent, tokens, aliases, st, end)) return;
-        std::cout << check_and_alias_query(parent, tokens, aliases, st, end);
+        if(int as_idx = check_for_alias(tokens, st, end); as_idx != -1) alias_query(parent, tokens, aliases, st, end, as_idx);
         std::cout << "invalid selection expression. Token must be . or AS.\n";
     }
 
@@ -128,10 +127,30 @@ namespace DB {
         }
         // there should be only one column or just cross joins via commas
         if(join_pos == -1) {
-            //Check for single table
-            //Check for Alias
+            int i = st;
+            std::cout << "Join qualifer: " << parent->qualifier << "\t len: " << (end-st+1) << "\t first token: " << tokens[st].value << std::endl;
+            // Check if alias
+            // Check if single table
+            if(end - st + 1 == 1) {
+                parent->children.emplace_back(SqlNode("Table Reference"));
+                parent->children[0].qualifier = tokens[i].value;
+            }
+            //Check for alias
+            else if(int as_idx = check_for_alias(tokens, st, end); as_idx != -1) {
+                parent->children.emplace_back(SqlNode("Table Reference"));
+                alias_query(&parent->children[parent->children.size()-1], tokens, aliases, st, end, as_idx);
+            } 
             //Check for Subquery
+            else if(tokens[st].value == "(") {
+
+            }
             // Check for Condition
+            if (tokens[st].value == "ON") {
+
+            }
+            else {
+                std::cout << "Invalid Expression to Join\n";
+            }
         }
         // There are joins
         else {
@@ -142,21 +161,21 @@ namespace DB {
             // create join child node and recurse through left and right side to obtain the left and right expressions that need to be joined
             parent->children.emplace_back(SqlNode("Join Expr"));
             if (tokens[join_pos].value == ",") {
-                parent->children[parent->children.size()-1].join_type = "CROSS";
+                parent->children[parent->children.size()-1].qualifier = "CROSS";
                 from_query(&parent->children[parent->children.size()-1], tokens, aliases, st, join_pos);  
             }
             else if(tokens[join_pos-1].type == KEYWORD && join_types.contains(tokens[join_pos-1].value)) {
-                parent->children[parent->children.size()-1].join_type = tokens[join_pos-1].value;
+                parent->children[parent->children.size()-1].qualifier = tokens[join_pos-1].value;
                 from_query(&parent->children[parent->children.size()-1], tokens, aliases, st, join_pos-1);
             } 
             else {
-                parent->children[parent->children.size()-1].join_type = "INNER"; 
+                parent->children[parent->children.size()-1].qualifier = "INNER"; 
                 from_query(&parent->children[parent->children.size()-1], tokens, aliases, st, join_pos);  
             }
             from_query(&parent->children[parent->children.size()-1], tokens, aliases, join_pos + 1, end);  
         }
     }
-    bool check_and_alias_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end) {
+    int check_for_alias(std::vector<Token>& tokens, int st, int end) {
         int as_idx = -1;
         for(int i = st; i < end; ++i) {
             if (tokens[i].value == "AS") {
@@ -164,14 +183,26 @@ namespace DB {
                 break;
             }
         }
-
-        //is alias
-        if(as_idx != -1) {
-            parent->alias = tokens[end].value;
-            aliases.push_back(tokens[end].value);
-            return true;
-        }
-        return false;
+        return as_idx;
     }
+    void alias_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end, int as_idx) {  
+        if(as_idx != -1) {
+            // alias the qualifier
+            parent->alias = tokens[as_idx+1].value;
+            aliases.push_back(tokens[end].value);
+            std::cout << "left of alias size = " << (as_idx - st + 1) << std::endl;
+            std::cout << tokens[st].value << std::endl;
+            //if qualifier is a table reference
+            if(as_idx - st == 1) {
+                parent->qualifier = tokens[as_idx-1].value;
+            }
+            //if qualifier is a subquery
+            else if(tokens[as_idx-1].value == ")") {
 
+            }
+        }
+        else {
+            std::cout << "expression is not aliasable\n";
+        }
+    }
 }

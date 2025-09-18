@@ -23,9 +23,8 @@ struct SqlNode {
     string                      alias;
 
     //FROM clause specific fields
-    string                      join_type;
 
-    SqlNode(string t) : type(t), qualifier(""), alias(""), join_type("") {}
+    SqlNode(string t) : type(t), qualifier(""), alias("") {}
 };
 
 inline void tree_print_helper(SqlNode* root, const string& prefix = "", bool is_last = true, bool is_root = true) {
@@ -37,10 +36,8 @@ inline void tree_print_helper(SqlNode* root, const string& prefix = "", bool is_
     }
     
     std::cout << root->type;
-    if(root->type == "Column") {
-        if(root->alias != "") std::cout << " { alias: " << root->alias << " }";
-        if(root->qualifier != "") std::cout << " { qualifer: " << root->qualifier << " }";
-    }
+    if(root->alias != "") std::cout << " { alias: " << root->alias << " }";
+    if(root->qualifier != "") std::cout << " { qualifer: " << root->qualifier << " }";
     std::cout << std::endl;
 
     for (size_t i = 0; i < root->children.size(); i++) {

@@ -22,7 +22,8 @@ namespace DB {
     std::vector<RANode>     convert_to_RA(std::vector<SqlNode> sql_ast); 
 
     //general queries
-    bool                    check_and_alias_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
+    int                     check_for_alias(std::vector<Token>& tokens, int st, int end);
+    void                    alias_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end, int as_idx);
     void                    subquery_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
 
     //select statement specific queries
