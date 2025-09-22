@@ -27,11 +27,12 @@ namespace DB {
     void                    subquery_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
 
     //select statement specific queries
-    void                    select_query(   SqlNode* root, std::vector<Token>& tokens, std::vector<string>& aliases, 
-                                            int st, int end);
-    void select_expression_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
-    void                    from_query(     SqlNode* root, std::vector<Token>& tokens, std::vector<string>& aliases, 
-                                            int st, int end);
+    void    select_query(   SqlNode* root, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
+    void    select_expression_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
+    
+    //from statement specific queries
+    void    from_query(SqlNode* root, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
+    int    table_expression_query(SqlNode* node, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end); 
                                 
    
 

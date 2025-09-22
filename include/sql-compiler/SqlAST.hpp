@@ -23,7 +23,7 @@ struct SqlNode {
     string                      alias;
 
     //FROM clause specific fields
-
+    SqlNode() : type(""), qualifier(""), alias("") {}
     SqlNode(string t) : type(t), qualifier(""), alias("") {}
 };
 

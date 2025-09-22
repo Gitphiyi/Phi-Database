@@ -2,6 +2,7 @@
 #include "general/Types.hpp"
 
 #include <iostream>
+#include <cstdio>
 
 namespace DB {
     std::vector<SqlNode> create_SQL_AST(std::vector<Token> tokens) //do move operations to make it apart of vector
@@ -117,64 +118,76 @@ namespace DB {
     }
 
     void from_query(SqlNode* parent, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end) {
-        std::vector<int> join_positions{};
-        int join_pos = -1;
-        for(int i = st; i < end; i++) {
-            if(tokens[i].value == "," || tokens[i].value == "JOIN") {
-                join_pos = i;
-                break;
+        SqlNode* from_node;
+        for(int i = st; i < end; ++i) {
+            //reached a join
+            if(tokens[i].value == "JOIN" || tokens[i].value == ",") {
+                if (i == st) {
+                    std::cout << "JOIN must have a left column!";
+                    return;
+                }
+                SqlNode join_node = SqlNode();
+                SqlNode left_node = from_node();
+                SqlNode right_node = SqlNode();
+                SqlNode on_cond_node = SqlNode(); // if empty then it is cross product
+                int end_left_node = i-1;
+
+                // udate join node
+                if (tokens[i].value == ",") {
+                    join_node.qualifier = "CROSS";
+                }
+                else if(tokens[i-1].type == KEYWORD && join_types.contains(tokens[i-1].value)) {
+                    join_node.qualifier = tokens[i-1].value;
+                    end_left_node--; // Make end of left node not include the Join specifier
+                } 
+                else {
+                    join_node.qualifier = "INNER"; 
+                }
+                join_node.children.emplace_back(left_node);
+                join_node.children.emplace_back(right_node);
+                join_node.children.emplace_back(on_cond_node);
+
+                node = join_node;
+
+                std::printf("join type = %s JOIN \n", join_node.qualifier.c_str());
+                // update left child node
+
+                // create right child
+                // create ON condition node
+                // create join child node and update it as the FROM query head node
+                //node->children.emplace_back(SqlNode("Join Expr"));
             }
         }
-        // there should be only one column or just cross joins via commas
-        if(join_pos == -1) {
-            int i = st;
-            std::cout << "Join qualifer: " << parent->qualifier << "\t len: " << (end-st+1) << "\t first token: " << tokens[st].value << std::endl;
-            // Check if alias
-            // Check if single table
-            if(end - st + 1 == 1) {
-                parent->children.emplace_back(SqlNode("Table Reference"));
-                parent->children[0].qualifier = tokens[i].value;
-            }
-            //Check for alias
-            else if(int as_idx = check_for_alias(tokens, st, end); as_idx != -1) {
-                parent->children.emplace_back(SqlNode("Table Reference"));
-                alias_query(&parent->children[parent->children.size()-1], tokens, aliases, st, end, as_idx);
-            } 
-            //Check for Subquery
-            else if(tokens[st].value == "(") {
+        // must be no join clauses in FROM statement, so the entire thing must be a table
+        if(from_node->type == "") {
 
-            }
-            // Check for Condition
-            if (tokens[st].value == "ON") {
-
-            }
-            else {
-                std::cout << "Invalid Expression to Join\n";
-            }
         }
-        // There are joins
+        parent->children.emplace_back(from_node);
+    }
+    int table_expression_query(SqlNode* node, std::vector<Token>& tokens, std::vector<string>& aliases, int st) {
+        // Check if alias
+        // Check if single table
+        if(end - st + 1 == 1) {
+            node->type = "Table Reference";
+            node->qualifier = tokens[st].value;
+        }
+        //Check for alias
+        else if(int as_idx = check_for_alias(tokens, st, end); as_idx != -1) {
+            alias_query(&node, tokens, aliases, st, end, as_idx);
+        } 
+        // //Check for Subquery
+        else if(tokens[st].value == "(") {
+
+        }
+        // // Check for Condition
+        // if (tokens[st].value == "ON") {
+
+        // }
         else {
-            if(join_pos == st) {
-                std::cout << "JOIN must have a left column!";
-                return;
-            }
-            // create join child node and recurse through left and right side to obtain the left and right expressions that need to be joined
-            parent->children.emplace_back(SqlNode("Join Expr"));
-            if (tokens[join_pos].value == ",") {
-                parent->children[parent->children.size()-1].qualifier = "CROSS";
-                from_query(&parent->children[parent->children.size()-1], tokens, aliases, st, join_pos);  
-            }
-            else if(tokens[join_pos-1].type == KEYWORD && join_types.contains(tokens[join_pos-1].value)) {
-                parent->children[parent->children.size()-1].qualifier = tokens[join_pos-1].value;
-                from_query(&parent->children[parent->children.size()-1], tokens, aliases, st, join_pos-1);
-            } 
-            else {
-                parent->children[parent->children.size()-1].qualifier = "INNER"; 
-                from_query(&parent->children[parent->children.size()-1], tokens, aliases, st, join_pos);  
-            }
-            from_query(&parent->children[parent->children.size()-1], tokens, aliases, join_pos + 1, end);  
+            std::cout << "Invalid table expression\n";
         }
     }
+
     int check_for_alias(std::vector<Token>& tokens, int st, int end) {
         int as_idx = -1;
         for(int i = st; i < end; ++i) {
