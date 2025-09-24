@@ -7,13 +7,13 @@
 
 struct SchemaCol {
     string      name;
-    datatype   type;
+    ColumnType   type;
     bool        nullable;
     datatype    default_val;
     bool        is_primary_key;
     bool        is_unique;
 
-    SchemaCol(const string& name, datatype type, bool nullable = true,
+    SchemaCol(const string& name, ColumnType type, bool nullable = true,
         bool primaryKey = false, bool unique = false, datatype defaultVal = {}) : 
         name(name),
         type(type),
@@ -38,7 +38,7 @@ struct Schema {
   }
 
   void add_col(const std::string& name,
-               datatype       type,
+               ColumnType         type,
                bool           nullable      = true,
                bool           primaryKey    = false,
                bool           unique        = false,
@@ -46,25 +46,26 @@ struct Schema {
   {
     columns.emplace_back(name, type, nullable, primaryKey, unique, defaultVal);
   }
+  void print() {
+    std::cout << "| ";
+    for(SchemaCol col : columns) {
+      std::cout << col.name;
+      if(col.is_primary_key) {
+        std::cout<<"(PRIMARY) ";
+      }
+        if(col.is_unique) {
+        std::cout<<"(UNIQUE) ";
+      }
+      std::cout<< " | ";
+    }
+    std::cout<<std::endl;
+  }
 
   size_t get_size() {
     size_t sz = 0;
     for(SchemaCol col : columns) {
       sz += col.get_size();
     }
-    return sz;
-  }
-};
-
-struct TableMetadataHeader {
-  string name;
-  Schema& schema;
-  TableMetadataHeader(const string& Name, Schema& Schema) : name(Name), schema(Schema) {}
-
-  size_t get_size() {
-    size_t sz = 0;
-    sz += name.length() + 1; //add terminator byte at end
-    sz += schema.get_size();
     return sz;
   }
 };

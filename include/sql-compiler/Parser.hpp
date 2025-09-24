@@ -32,7 +32,7 @@ namespace DB {
     
     //from statement specific queries
     void    from_query(SqlNode* root, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end);
-    int    table_expression_query(SqlNode* node, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end); 
+    int     table_expression_query(SqlNode* node, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end); 
                                 
    
 

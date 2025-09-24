@@ -127,7 +127,7 @@ namespace DB {
                     return;
                 }
                 SqlNode join_node = SqlNode();
-                SqlNode left_node = from_node();
+                SqlNode left_node = SqlNode();
                 SqlNode right_node = SqlNode();
                 SqlNode on_cond_node = SqlNode(); // if empty then it is cross product
                 int end_left_node = i-1;
@@ -147,9 +147,9 @@ namespace DB {
                 join_node.children.emplace_back(right_node);
                 join_node.children.emplace_back(on_cond_node);
 
-                node = join_node;
+                //from_node = &join_node;
 
-                std::printf("join type = %s JOIN \n", join_node.qualifier.c_str());
+                //std::printf("join type = %s JOIN \n", join_node.qualifier.c_str());
                 // update left child node
 
                 // create right child
@@ -162,9 +162,9 @@ namespace DB {
         if(from_node->type == "") {
 
         }
-        parent->children.emplace_back(from_node);
+        //parent->children.emplace_back(from_node);
     }
-    int table_expression_query(SqlNode* node, std::vector<Token>& tokens, std::vector<string>& aliases, int st) {
+    int table_expression_query(SqlNode* node, std::vector<Token>& tokens, std::vector<string>& aliases, int st, int end) {
         // Check if alias
         // Check if single table
         if(end - st + 1 == 1) {
@@ -173,7 +173,7 @@ namespace DB {
         }
         //Check for alias
         else if(int as_idx = check_for_alias(tokens, st, end); as_idx != -1) {
-            alias_query(&node, tokens, aliases, st, end, as_idx);
+            //alias_query(&node, tokens, aliases, st, end, as_idx);
         } 
         // //Check for Subquery
         else if(tokens[st].value == "(") {
@@ -186,6 +186,7 @@ namespace DB {
         else {
             std::cout << "Invalid table expression\n";
         }
+        return 1;
     }
 
     int check_for_alias(std::vector<Token>& tokens, int st, int end) {

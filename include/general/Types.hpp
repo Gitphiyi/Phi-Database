@@ -28,3 +28,13 @@ enum OpType {
     UNLOCK,
     COMMIT
 };
+
+enum class ColumnType {
+    INT,
+    FLOAT,
+    CHAR,
+    BOOL,
+    INT64,
+    DOUBLE,
+    STRING
+};
