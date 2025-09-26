@@ -5,6 +5,7 @@
 #include <iostream>
 #include <bitset>
 #include <sys/fcntl.h>
+#include <sys/stat.h>
 #include <filesystem>
 
 namespace DB {
@@ -39,10 +40,23 @@ namespace DB {
             flags |= O_CREAT;
         }
         string path = "database-files";
-        theDbFd = ::open(path.c_str(), flags, 0644); //0644 is octal for rw for all users
-        if (theDbFd < 0) {
-            throw std::system_error(errno, std::generic_category(), "File could not be created");
+        if (mkdir(path.c_str(), 0755) == -1) {
+            if (errno != EEXIST) {
+                throw std::system_error(errno, std::generic_category(), "Error creating DbFile directory\n");
+            } 
         }
+
+        path = "database-files/heapfiles";
+        if (mkdir(path.c_str(), 0755) == -1) {
+            if (errno != EEXIST) {
+                throw std::system_error(errno, std::generic_category(), "Error creating HeapFile directory\n");
+            } 
+        }
+        theDbFd = 0;
+        // theDbFd = ::open(path.c_str(), flags, 0644); //0644 is octal for rw for all users
+        // if (theDbFd < 0) {
+        //     throw std::system_error(errno, std::generic_category(), "File could not be created");
+        // }
     }
 
     DbFile::~DbFile()
@@ -50,6 +64,15 @@ namespace DB {
         close();
     }
 
+    int DbFile::create_heapfile(string tablename) {
+        int flags = O_RDWR | O_CREAT;
+        string path = "database-files/heapfiles/"+tablename;
+        int fd = ::open(path.c_str(), flags, 0644);
+        if (fd < 0) {
+            throw std::system_error(errno, std::generic_category(), std::format("heapfile for table {} could not be created", tablename));
+        }
+        return fd;
+    }
     /**
      * Assume that the pointer in buff is pointing to space valid.
      * Return -1 on error
@@ -68,9 +91,18 @@ namespace DB {
         return myReadBytes;
     }
 
-    ssize_t DbFile::read_at(off_t offset, Page& buffer, int fd) {
+    ssize_t DbFile::read_at(off_t pg_offset, Page& buffer, int fd) {
         checkIfFileDescriptorValid(fd);
-        ssize_t myReadBytes = pread(fd, &buffer, PAGE_SIZE, offset * PAGE_SIZE);
+        ssize_t myReadBytes = pread(fd, &buffer, PAGE_SIZE, pg_offset * PAGE_SIZE);
+        if(myReadBytes == 0) {
+            std::cout << "EOF\n";
+        }
+
+        return myReadBytes;
+    }
+    ssize_t DbFile::read_at(off_t offset, void* buffer, ssize_t num_bytes, int fd) {
+        checkIfFileDescriptorValid(fd);
+        ssize_t myReadBytes = pread(fd, &buffer, num_bytes, offset);
         if(myReadBytes == 0) {
             std::cout << "EOF\n";
         }
@@ -83,6 +115,17 @@ namespace DB {
 
         ssize_t myWrittenBytes = pwrite(theDbFd, &buffer, PAGE_SIZE, offset * PAGE_SIZE);
         if(myWrittenBytes != PAGE_SIZE) {
+            perror("Did not write enough bytes. Undo-ing the write");
+            return -1;
+        }
+        return myWrittenBytes;
+    }
+
+    ssize_t DbFile::write_at(off_t offset, void* buffer, ssize_t num_bytes, int fd) {
+        checkIfFileDescriptorValid(fd);
+
+        ssize_t myWrittenBytes = pwrite(fd, buffer, PAGE_SIZE, offset * PAGE_SIZE);
+        if(myWrittenBytes != num_bytes) {
             perror("Did not write enough bytes. Undo-ing the write");
             return -1;
         }

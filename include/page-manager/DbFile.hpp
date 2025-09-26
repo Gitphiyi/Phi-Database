@@ -17,9 +17,13 @@ namespace DB {
             static DbFile& getInstance();
             static void checkIfFileDescriptorValid(int aFd);
             
+            int create_heapfile(string tablename);
+
             //page offset and buffer page to read/write
             ssize_t db_read_at(off_t offset, Page& buffer);
             ssize_t read_at(off_t offset, Page& buffer, int fd);
+            ssize_t read_at(off_t offset, void* buffer, ssize_t num_bytes, int fd);
+            ssize_t write_at(off_t offset, void* buffer, ssize_t num_bytes, int fd);
             ssize_t db_write_at(off_t offset, Page& buffer);
             ssize_t write_at(off_t offset, Page& buffer, int fd);
             int     get_path(const string& path); //return fd and -1 on failure

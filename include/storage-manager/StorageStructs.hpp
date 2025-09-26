@@ -22,7 +22,7 @@ struct Row {
 };
 
 struct TableId {
-    
+    u64 id;
 };
 
 struct TableMetadataHeader {
