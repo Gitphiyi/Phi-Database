@@ -50,9 +50,9 @@ namespace DB {
 
     bool PageCache::write_through(Page& page, const string& filepath) {
         //write page to disk
-        int fd = theDbFile.get_path(filepath);
+        int fd = theDbFile.get_filepath(filepath);
         if(fd == -1) {
-            fd = theDbFile.add_path(filepath);
+            fd = theDbFile.add_filepath(filepath);
         }
         ssize_t bytes_written = theDbFile.write_at(page.id, page, fd);
         std::cout << bytes_written << " bytes were written into " << filepath << std::endl;
@@ -75,7 +75,7 @@ namespace DB {
         }
 
         //read page into buffer from disk
-        int fd = theDbFile.get_path(filepath);
+        int fd = theDbFile.get_filepath(filepath);
         if(fd == -1) {
             std::cout << "path is invalid" << std::endl;
         }

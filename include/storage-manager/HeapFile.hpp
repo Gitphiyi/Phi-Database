@@ -5,6 +5,7 @@
 #include "page-manager/PageCache.hpp"
 
 #include <vector>
+#include <iostream>
 
 namespace DB {
     /**
@@ -17,14 +18,17 @@ namespace DB {
         u64 table_id;
         u64 num_pages;
         u64 num_records;
-        ssize_t size = identifier.size()+sizeof(heap_id)+sizeof(table_id)+sizeof(num_pages)+sizeof(num_records); 
+        ssize_t size = identifier.size()+1+sizeof(heap_id)+sizeof(table_id)+sizeof(num_pages)+sizeof(num_records);
+        
         std::byte* to_bytes() {
             std::byte* buffer = new std::byte[size];
             size_t offset = 0;
+            std::cout << "identifier: " << identifier.data()<< std::endl;
+            std::cout << "size = " << size << std::endl;
 
             // string contents
-            std::memcpy(buffer + offset, identifier.data(), identifier.size());
-            offset += identifier.size();
+            std::memcpy(buffer + offset, identifier.data(), identifier.size() + 1);
+            offset += identifier.size()+1;
 
             // integers
             std::memcpy(buffer + offset, &heap_id, sizeof(heap_id));

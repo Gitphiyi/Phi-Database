@@ -39,24 +39,20 @@ namespace DB {
         if (ifMissing) {
             flags |= O_CREAT;
         }
-        string path = "database-files";
-        if (mkdir(path.c_str(), 0755) == -1) {
+        string db_path = "database-files";
+        if (mkdir(db_path.c_str(), 0755) == -1) {
             if (errno != EEXIST) {
                 throw std::system_error(errno, std::generic_category(), "Error creating DbFile directory\n");
             } 
         }
 
-        path = "database-files/heapfiles";
+        string path = db_path + "/heapfiles";
         if (mkdir(path.c_str(), 0755) == -1) {
             if (errno != EEXIST) {
                 throw std::system_error(errno, std::generic_category(), "Error creating HeapFile directory\n");
             } 
         }
-        theDbFd = 0;
-        // theDbFd = ::open(path.c_str(), flags, 0644); //0644 is octal for rw for all users
-        // if (theDbFd < 0) {
-        //     throw std::system_error(errno, std::generic_category(), "File could not be created");
-        // }
+        theDbFd = add_filepath(db_path+"/database.db");
     }
 
     DbFile::~DbFile()
@@ -64,15 +60,6 @@ namespace DB {
         close();
     }
 
-    int DbFile::create_heapfile(string tablename) {
-        int flags = O_RDWR | O_CREAT;
-        string path = "database-files/heapfiles/"+tablename;
-        int fd = ::open(path.c_str(), flags, 0644);
-        if (fd < 0) {
-            throw std::system_error(errno, std::generic_category(), std::format("heapfile for table {} could not be created", tablename));
-        }
-        return fd;
-    }
     /**
      * Assume that the pointer in buff is pointing to space valid.
      * Return -1 on error
@@ -143,22 +130,25 @@ namespace DB {
         return myWrittenBytes;
     }
 
-    int DbFile::get_path(const string& path) {
+    int DbFile::get_filepath(const string& path) {
         if(!theFdMap.contains(path)) {
             return -1;
         }
         return theFdMap[path];
     }
 
-    int DbFile::add_path(const string& path) {
-        if(get_path(path) != -1) {
+    int DbFile::add_filepath(const string& path) {
+        if(get_filepath(path) != -1) {
             std::cout << "file descriptor already exists in map" << std::endl;
             return -1;
         }
         int flags{O_CREAT | O_RDWR};
         int fd = ::open(path.c_str(), flags, 0644);
+        if (fd < 0) {
+            throw std::system_error(errno, std::generic_category(), std::format("File {} could not be created", path));
+        }
         theFdMap[path] = fd;
-        std::cout << "successfully added new file descriptor for path " << path << std::endl;
+        std::cout << "successfully added new file descriptor for filepath " << path << std::endl;
         return fd;
     }
 
