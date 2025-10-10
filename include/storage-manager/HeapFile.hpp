@@ -5,64 +5,69 @@
 #include "page-manager/PageCache.hpp"
 
 #include <vector>
+#include <stdint.h>
 #include <iostream>
 
 namespace DB {
+    struct 
     /**
      * Only allow fixed sized pages
      * Page Directory implementation of heapfiles
      */
     struct HeapFile_Metadata {
-        string identifier; //identifies it is a file of type heapfile
-        u64    heap_id; // local to table
-        u64 table_id;
-        u64 num_pages;
-        u64 num_records;
-        ssize_t size = identifier.size()+1+sizeof(heap_id)+sizeof(table_id)+sizeof(num_pages)+sizeof(num_records);
-        
-        std::byte* to_bytes() {
-            std::byte* buffer = new std::byte[size];
-            size_t offset = 0;
-            std::cout << "identifier: " << identifier.data()<< std::endl;
-            std::cout << "size = " << size << std::endl;
-
-            // string contents
-            std::memcpy(buffer + offset, identifier.data(), identifier.size() + 1);
-            offset += identifier.size()+1;
-
-            // integers
-            std::memcpy(buffer + offset, &heap_id, sizeof(heap_id));
-            offset += sizeof(heap_id);
-
-            std::memcpy(buffer + offset, &table_id, sizeof(table_id));
-            offset += sizeof(table_id);
-
-            std::memcpy(buffer + offset, &num_pages, sizeof(num_pages));
-            offset += sizeof(num_pages);
-
-            std::memcpy(buffer + offset, &num_records, sizeof(num_records));
-            offset += sizeof(num_records);
-
-            return buffer; 
-        }
-
+        string  identifier; // type heapfile and is always at page 0
+        u64     heap_id; // local to table
+        u64     table_id;
+        u64     num_pages;
+        u64     num_records;
+        u8      next_heapfile; // 0 means null
+        ssize_t size = identifier.size()+1+sizeof(heap_id)+sizeof(table_id)+sizeof(num_pages)
+                        +sizeof(num_records);
     };
+    inline std::byte* to_bytes(HeapFile_Metadata* metadata) {
+        std::byte* buffer = new std::byte[metadata->size];
+        size_t offset = 0;
 
+        // string contents
+        std::memcpy(buffer + offset, metadata->identifier.data(), metadata->identifier.size() + 1);
+        offset += metadata->identifier.size()+1;
+
+        // integers
+        std::memcpy(buffer + offset, &(metadata->heap_id), sizeof(metadata->heap_id));
+        offset += sizeof(metadata->heap_id);
+
+        std::memcpy(buffer + offset, &(metadata->table_id), sizeof(metadata->table_id));
+        offset += sizeof(metadata->table_id);
+
+        std::memcpy(buffer + offset, &(metadata->num_pages), sizeof(metadata->num_pages));
+        offset += sizeof(metadata->num_pages);
+
+        std::memcpy(buffer + offset, &(metadata->num_records), sizeof(metadata->num_records));
+        offset += sizeof(metadata->num_records);
+
+        return buffer; 
+    }
+
+    // First page is always heapfile metadata + list of page ids
     struct HeapFile {
         Page*               get_page(u32 pid); 
         //table specific functions
         //table just needs a way to get, insert, delete, update, and scan rows 
-        static void         initialize(bool if_missing);
-        Row                 get_row(RowId id); 
-        RowId               insert_row(Row* row, u32 page);
-        void                delete_row(RowId rid);
+        // Row                 get_row(RowId id); 
+        // RowId               insert_row(Row* row, u32 page);
+        // void                delete_row(RowId rid);
 
         HeapFile_Metadata   metadata;
-        int                 num_heapfiles;
-        std::vector<int>    heap_fd;                 
+        int                 heap_fd;                 
 
 
         HeapFile(int table_id, string tablename, bool if_missing);
-        
     };
+
+    HeapFile* create_heapfile(int table_id, string tablename, bool if_missing);
+    HeapFile* initalize_heapfile(int table_id, string tablename, bool if_missing);
+    HeapFile* initalize_heapfile(string tablename);
+    HeapFile* read_heapfile();
+
+    void print_heapfile(HeapFile heapfile);
 }

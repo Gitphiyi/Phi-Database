@@ -25,7 +25,7 @@ namespace DB {
             ssize_t db_write_at(off_t offset, Page& buffer);
             ssize_t write_at(off_t offset, Page& buffer, int fd);
             int     get_filepath(const string& path); //return fd and -1 on failure
-            int     add_filepath(const string& path, const string& name, const string& filetype);
+            int     add_filepath(const string& path);
 
             //Force cached data and metadata to storage
             void sync();

@@ -5,7 +5,7 @@
 #include <iostream>
 
 
-#define PAGE_SIZE sizeof(Page) + PAGE_DATA_SIZE - sizeof(std::byte*) //4KB Page
+#define PAGE_SIZE sizeof(Page) + PAGE_DATA_SIZE - sizeof(std::byte*) //4KB Page which replaces data array pointer with page size
 #define PAGE_DATA_SIZE 128 // in bytes
 #define PAGE_FILL 90 //make sure only fill up to 90%
 

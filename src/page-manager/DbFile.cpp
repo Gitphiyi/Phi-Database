@@ -89,7 +89,7 @@ namespace DB {
     }
     ssize_t DbFile::read_at(off_t offset, void* buffer, ssize_t num_bytes, int fd) {
         checkIfFileDescriptorValid(fd);
-        ssize_t myReadBytes = pread(fd, &buffer, num_bytes, offset);
+        ssize_t myReadBytes = pread(fd, buffer, num_bytes, offset);
         if(myReadBytes == 0) {
             std::cout << "EOF\n";
         }
@@ -111,7 +111,7 @@ namespace DB {
     ssize_t DbFile::write_at(off_t offset, void* buffer, ssize_t num_bytes, int fd) {
         checkIfFileDescriptorValid(fd);
 
-        ssize_t myWrittenBytes = pwrite(fd, buffer, PAGE_SIZE, offset * PAGE_SIZE);
+        ssize_t myWrittenBytes = pwrite(fd, buffer, num_bytes, offset);
         if(myWrittenBytes != num_bytes) {
             perror("Did not write enough bytes. Undo-ing the write");
             return -1;
