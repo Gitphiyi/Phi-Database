@@ -14,7 +14,7 @@ int main() {
 
     string tablename = "table1";
     DbFile::initialize(false);
-    auto h = HeapFile(1, tablename, false);
-
+    auto h = HeapFile(67, tablename, false);
+    print_heapfile_metadata(&h);
     return 0;
 }

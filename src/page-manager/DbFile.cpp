@@ -93,6 +93,9 @@ namespace DB {
         if(myReadBytes == 0) {
             std::cout << "EOF\n";
         }
+        if(myReadBytes < 0) {
+            std::cout << "Error in reading\n";
+        }
 
         return myReadBytes;
     }

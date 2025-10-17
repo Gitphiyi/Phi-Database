@@ -23,24 +23,20 @@ namespace DB {
         ssize_t size = identifier.size()+1+sizeof(heap_id)+sizeof(table_id)+sizeof(num_pages)
                         +sizeof(num_records)+sizeof(next_heapfile);
     };
-    inline std::byte* to_bytes(HeapFile_Metadata* metadata) {
-        std::byte* buffer = new std::byte[metadata->size];
+    inline u8* to_bytes(HeapFile_Metadata* metadata) {
+        u8* buffer = new u8[metadata->size];
         size_t offset = 0;
 
         // string contents
         std::memcpy(buffer + offset, metadata->identifier.data(), metadata->identifier.size() + 1);
         offset += metadata->identifier.size()+1;
-
         // integers
         std::memcpy(buffer + offset, &(metadata->heap_id), sizeof(metadata->heap_id));
         offset += sizeof(metadata->heap_id);
-
         std::memcpy(buffer + offset, &(metadata->table_id), sizeof(metadata->table_id));
         offset += sizeof(metadata->table_id);
-
         std::memcpy(buffer + offset, &(metadata->num_pages), sizeof(metadata->num_pages));
         offset += sizeof(metadata->num_pages);
-
         std::memcpy(buffer + offset, &(metadata->num_records), sizeof(metadata->num_records));
         offset += sizeof(metadata->num_records);
                 std::memcpy(buffer + offset, &(metadata->next_heapfile), sizeof(metadata->next_heapfile));
@@ -77,5 +73,6 @@ namespace DB {
     HeapFile* initalize_heapfile(string tablename);
     HeapFile* read_heapfile();
 
+    void print_heapfile_metadata(HeapFile* heapfile);
     void print_heapfile(HeapFile heapfile);
 }
