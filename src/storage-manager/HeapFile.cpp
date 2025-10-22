@@ -46,6 +46,23 @@ namespace DB {
         }
         std::cout << "There are " << num_pages << " # of pages on the first page \n";
     }
+    HeapFile* create_heapfile(string tablename) {
+        HeapFile* heapfile;
+        DbFile dbfile = DbFile::getInstance();
+
+        heapfile->metadata{
+            tablename + "_heapfile_1",
+            (u64) 3,
+            (u64) 1,
+            (u64) 0,
+            (u64) 0,
+            (u8)  0x8
+        }; 
+
+        return heapfile;
+        fail:
+        return nullptr;
+    }
 
     void print_heapfile_metadata(HeapFile* heapfile) {
         DbFile dbfile = DbFile::getInstance();

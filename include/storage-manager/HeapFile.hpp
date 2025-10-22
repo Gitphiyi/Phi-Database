@@ -53,13 +53,11 @@ namespace DB {
         u64 free_space; // number of free bytes
     }__attribute__((packed));
 
-    // First page is always heapfile metadata + list of page ids
+    // First page is always heapfile metadata + Table Schema + list of page ids
     struct HeapFile {
         Page*               get_page(u32 pid); 
         //table specific functions
         //table just needs a way to get, insert, delete, update, and scan rows 
-        // Row                 get_row(RowId id); 
-        // RowId               insert_row(Row* row, u32 page);
         // void                delete_row(RowId rid);
 
         HeapFile_Metadata   metadata;
@@ -68,11 +66,15 @@ namespace DB {
         HeapFile(int table_id, string tablename, bool if_missing);
     };
 
-    HeapFile* create_heapfile(int table_id, string tablename, bool if_missing);
-    HeapFile* initalize_heapfile(int table_id, string tablename, bool if_missing);
+    HeapFile* create_heapfile(string tablename);
     HeapFile* initalize_heapfile(string tablename);
     HeapFile* read_heapfile();
 
     void print_heapfile_metadata(HeapFile* heapfile);
-    void print_heapfile(HeapFile heapfile);
+    void print_table(HeapFile heapfile);
+
+    Row*                get_row(Heapfile* heapfile, RowId id);
+    RowId               insert_row(Row* row, u32 page);
+    RowId               delete_row(RowId rid);
+    std::vector<>
 }

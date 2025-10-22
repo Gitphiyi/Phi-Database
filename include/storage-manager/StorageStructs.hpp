@@ -20,6 +20,9 @@ struct Row {
     std::vector<datatype>   values;
     Row(int n, std::vector<datatype>&& v) : numCols(n), values(std::move(v)) {}
 };
+inline Row* create_row(int n, std::vector<datatype> v) {
+
+}
 
 struct TableId {
     u64 id;

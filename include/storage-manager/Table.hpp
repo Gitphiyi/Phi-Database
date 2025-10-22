@@ -9,6 +9,22 @@
 #include <string>
 
 namespace DB {
+    struct Table {
+        string              name;
+        Schema*             schema;
+        HeapFile*           heapfile;
+        std::vector<u64>    theFreePages; 
+        
+    };
+
+    //create stuff i.e. write into heapfile
+    void create_table();
+
+    void load_table();
+    void load_schema();
+    
+
+
     class Table {
         public:
             //initialize new Table
@@ -31,8 +47,6 @@ namespace DB {
             //bool                  theIndex;
             std::vector<u64>        theFreePages; 
             Schema                  theSchema;    
-            void loadSchema(); //read first page
-            void writeHeader(); // write schema & metadata to page 0
             u64  allocPage(); // grab a free page from file
 
     }; 

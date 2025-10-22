@@ -27,12 +27,3 @@ namespace DB {
     // }
 }
 
-
-
-
-
-// u64 read(u64 pageNum, u16 rowNum, Row row) {
-//     // first check buffer
-//     // make a read to disk
-// }
-
