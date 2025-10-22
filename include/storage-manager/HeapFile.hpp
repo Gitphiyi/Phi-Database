@@ -22,7 +22,7 @@ namespace DB {
         u8      next_heapfile; // 0 means null
         ssize_t size = identifier.size()+1+sizeof(heap_id)+sizeof(table_id)+sizeof(num_pages)
                         +sizeof(num_records)+sizeof(next_heapfile);
-    };
+    }__attribute__((packed));
     inline u8* to_bytes(HeapFile_Metadata* metadata) {
         u8* buffer = new u8[metadata->size];
         size_t offset = 0;
@@ -51,7 +51,7 @@ namespace DB {
     struct HeapPageEntry {
         u32 page_id;
         u64 free_space; // number of free bytes
-    };
+    }__attribute__((packed));
 
     // First page is always heapfile metadata + list of page ids
     struct HeapFile {

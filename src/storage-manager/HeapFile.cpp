@@ -32,15 +32,19 @@ namespace DB {
         u8 buffer[sizeof(HeapPageEntry)];
         u64 page_id = 1;
         page_id = 0x12345678;
-        u32 init_size = 0;
+        u32 init_size = 1;
         memcpy(buffer+sizeof(u64), &init_size, sizeof(init_size));
+        int num_pages = 0;
         while(remaining_bytes >= sizeof(HeapPageEntry)) {
             memcpy(buffer, &page_id, sizeof(page_id));
             ++page_id;
+            std::cout<<"entry offset = " << entry_offset << std::endl;
             dbfile.write_at(entry_offset, buffer, sizeof(HeapPageEntry), heapFd);
             entry_offset += sizeof(HeapPageEntry);
             remaining_bytes -= sizeof(HeapPageEntry);
+            num_pages++;
         }
+        std::cout << "There are " << num_pages << " # of pages on the first page \n";
     }
 
     void print_heapfile_metadata(HeapFile* heapfile) {
@@ -48,22 +52,38 @@ namespace DB {
         int i = 0;
         off_t offset = 0;
         HeapFile_Metadata read_metadata;
-        std::cout << heapfile->metadata.identifier.size() + 1 << std::endl;
+        read_metadata.size = heapfile->metadata.size;
+
         char str_buffer[heapfile->metadata.identifier.size() + 1];
         dbfile.read_at(offset, &str_buffer, heapfile->metadata.identifier.size() + 1, heapfile->heap_fd);
         read_metadata.identifier.assign(str_buffer, heapfile->metadata.identifier.size() + 1);
         offset +=  heapfile->metadata.identifier.size() + 1;
+        
         dbfile.read_at(offset, &read_metadata.heap_id, sizeof(heapfile->metadata.heap_id), heapfile->heap_fd);
         offset += sizeof(read_metadata.heap_id);
+        
         dbfile.read_at(offset, &read_metadata.table_id, sizeof(heapfile->metadata.table_id), heapfile->heap_fd);
-        offset += sizeof(read_metadata.heap_id);
+        offset += sizeof(read_metadata.table_id);
 
         std::cout << "Heapfile Metadata: \n";
         std::cout << "  identifier = " << read_metadata.identifier << std::endl;
         std::cout << "  heap id = " << read_metadata.heap_id << std::endl;
         std::cout << "  table id = " << read_metadata.table_id << std::endl;
 
-        //print all the pageId-capacity pairs
+        //print all the pageId capacity pairs
+        size_t remaining_bytes = PAGE_DATA_SIZE - read_metadata.size;
+        offset = read_metadata.size;
+
+        int num = 1;
+        while(remaining_bytes >= sizeof(HeapPageEntry)) {
+            HeapPageEntry entry;
+            dbfile.read_at(offset, &entry, sizeof(HeapPageEntry), heapfile->heap_fd);
+            offset += sizeof(HeapPageEntry);
+            remaining_bytes -= sizeof(HeapPageEntry);
+            std::cout<< "Row Entry " << num << "-> page id = " << entry.page_id << "\t\tfree space (B) = " << entry.free_space << std::endl; 
+            num++;
+        }
+
     }
 
 
