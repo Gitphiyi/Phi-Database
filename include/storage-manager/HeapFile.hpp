@@ -2,11 +2,11 @@
 
 #include "general/Page.hpp"
 #include "storage-manager/StorageStructs.hpp"
-#include "page-manager/PageCache.hpp"
 
 #include <vector>
 #include <stdint.h>
 #include <iostream>
+#include <cstring>
 
 namespace DB {
     /**
@@ -73,8 +73,8 @@ namespace DB {
     void print_heapfile_metadata(HeapFile* heapfile);
     void print_table(HeapFile heapfile);
 
-    Row*                get_row(Heapfile* heapfile, RowId id);
-    RowId               insert_row(Row* row, u32 page);
-    RowId               delete_row(RowId rid);
-    std::vector<>
+    Row*                get_row(HeapFile* heapfile, RowId id);
+    RowId               insert_row(HeapFile* heapfile, Row* row, u32 page);
+    RowId               delete_row(HeapFile* heapfile, RowId rid);
+    std::vector<Row*>   scan_heap(HeapFile* heapfile);
 }

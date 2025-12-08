@@ -4,12 +4,13 @@
 
 namespace DB {
     Table::Table(const string& name,
-            Schema& schema, 
+            Schema& schema,
             HeapFile& heapfile
             ) :
         theFileName(name),
         thePath("db/table/"+name),
-        theSchema(schema)
+        theSchema(schema),
+        theHeapFile(&heapfile)
         {}
 
     std::vector<Row*> Table::scan() const {
@@ -22,8 +23,34 @@ namespace DB {
         }
         return batch;
     }
-    // std::vector<Row*> join() const {
 
-    // }
+    RowId Table::insert_row() {
+        RowId rid;
+        rid.pageId.heapId = 0;
+        rid.pageId.page_num = 0;
+        rid.record_num = 0;
+        return rid;
+    }
+
+    Row* Table::read_row() {
+        return nullptr;
+    }
+
+    u64 Table::read(u64 pageNum, u16 rowNum) {
+        return 0;
+    }
+
+    string Table::print_metadata() {
+        string result = "Table: " + theFileName + "\n";
+        result += "Schema:\n";
+        for (const auto& col : theSchema.columns) {
+            result += "  " + col.name + "\n";
+        }
+        return result;
+    }
+
+    Schema* Table::get_record(int rid) {
+        return nullptr;
+    }
 }
 

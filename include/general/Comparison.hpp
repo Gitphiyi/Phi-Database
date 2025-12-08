@@ -1,7 +1,7 @@
 #pragma once
 
 #include "general/Types.hpp"
-#include <exception>
+#include <stdexcept>
 namespace DB {
     inline CondFn condfn_generator(string cond) {
         if(cond == "="){

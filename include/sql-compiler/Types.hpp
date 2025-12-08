@@ -1,5 +1,6 @@
 #pragma once
 
+#include "general/Types.hpp"
 #include <unordered_set>
 
 namespace DB {
@@ -11,9 +12,11 @@ namespace DB {
         "ON", "USING", "SET", "ALTER", "DROP", "TRUNCATE",
         "PRIMARY", "FOREIGN", "KEY", "UNIQUE", "CHECK", "DEFAULT",
         "NOT", "NULL", "BEGIN", "TRANSACTION", "COMMIT", "ROLLBACK",
-        "SAVEPOINT", "AS", "IN", "IS", "NULL", "NOT", "BETWEEN",
-        "EXISTS", "ANY", "ALL", "WITH", "EXCEPT", "UNION", "ALL",
-        "CAST", "CASE", "WHEN", "THEN", "ELSE", "END"
+        "SAVEPOINT", "AS", "IN", "IS", "BETWEEN",
+        "EXISTS", "ANY", "ALL", "WITH", "EXCEPT", "UNION",
+        "CAST", "CASE", "WHEN", "THEN", "ELSE", "END",
+        "ASC", "DESC", "LIMIT", "CROSS", "NATURAL", "LIKE",
+        "TRUE", "FALSE", "AND", "OR", "NULLS"
     };
 
     const std::unordered_set<string> sql_ops = {
@@ -40,9 +43,5 @@ namespace DB {
     struct Token {
         TokenType   type;
         string      value;
-    };
-
-    struct Query {
-        string query;
     };
 }

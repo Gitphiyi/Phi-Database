@@ -21,7 +21,7 @@ struct Row {
     Row(int n, std::vector<datatype>&& v) : numCols(n), values(std::move(v)) {}
 };
 inline Row* create_row(int n, std::vector<datatype> v) {
-
+    return new Row(n, std::move(v));
 }
 
 struct TableId {

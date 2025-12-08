@@ -3,6 +3,7 @@
 #include "Types.hpp"
 #include <string>
 #include <iostream>
+#include <cstring>
 
 
 #define PAGE_SIZE sizeof(Page) + PAGE_DATA_SIZE - sizeof(std::byte*) //4KB Page which replaces data array pointer with page size
@@ -25,13 +26,13 @@ struct Page {
         this->ref_count = o.dirty_bit;
         this->id = o.id;
         this->used_bytes = o.used_bytes;
-        memcpy(data, o.data, PAGE_DATA_SIZE);
+        std::memcpy(data, o.data, PAGE_DATA_SIZE);
         return *this;
     }
 
     void write_data(void* addedData, u32 sz) {
         void* ptr = data + used_bytes;
-        memcpy(ptr, addedData, sz);
+        std::memcpy(ptr, addedData, sz);
         used_bytes += sz;
     }
 
@@ -53,7 +54,7 @@ struct Page {
         for(int i = 0; i < PAGE_DATA_SIZE / sizeof(T); i ++){
             T num;
             char* ptr = reinterpret_cast<char*>(data) + i * sizeof(T);
-            memcpy(&num, (data+i*sizeof(T)), sizeof(T));
+            std::memcpy(&num, (data+i*sizeof(T)), sizeof(T));
             std::cout << num;
             if( i < (PAGE_DATA_SIZE / sizeof(T)) - 1) {
                 std::cout << ", ";

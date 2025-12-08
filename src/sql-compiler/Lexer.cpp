@@ -1,78 +1,138 @@
 #include "sql-compiler/Lexer.hpp"
+#include <cctype>
 #include <iostream>
 
 namespace DB {
-    std::vector<Token> tokenize_query(string& query) {
-        std::vector<Token> tokens;
+std::vector<Token> tokenize_query(string &query) {
+  std::vector<Token> tokens;
 
-        //lower case query in place
-        std::transform(query.begin(), query.end(), query.begin(),
-        [](unsigned char c){ return std::toupper(c); }); 
+  // Convert query to uppercase in place
+  std::transform(query.begin(), query.end(), query.begin(),
+                 [](unsigned char c) { return std::toupper(c); });
 
-        size_t i = 0;
-        while(i < query.length()) {
-            char c = query[i];
-            if(isspace(c)) {
-                i++;
-                continue;
-            }
-            //Identifier/Keyword
-            if(isalpha(c)) {
-                size_t start = i;
-                while(i < query.length() && (isalpha(query[i]) || query[i] == '_')) { 
-                    i++; 
-                }
-                string str = query.substr(start, i - start);
-                if(keywords.contains(str)) {
-                    tokens.push_back(Token(KEYWORD, str));
-                } else {
-                    tokens.push_back(Token(IDENTIFIER, str));
-                }
-                continue;
-            }
-            //set identifier for token
-            if(isnumber(c)) {
-                size_t start = i;
-                while(i < query.length() && isnumber(query[i])) {
-                    i++;
-                }
-                tokens.push_back(Token(NUMBER, query.substr(start, i-start)));
-                continue;
-            }
-            //string literal
-            if(c == '\'') {
-                i++;
-                size_t start = i;
-                while (i < query.size() && query[i] != '\'') i++;
-                tokens.push_back({STRING, query.substr(start, i - start)});
-                i++; //skip last apostrophe
-                continue;
-            }
-            // Symbols
-            if (symbols.contains(string(1, c))) {
-                tokens.push_back({SYMBOL, std::string(1, c)});
-                i++;
-                continue;
-            }
-            // Rest can only be operators or error
-            if (sql_ops.contains(string(1, c)) || c == ':') {
-                std::string op(1, c);
-                if(c == ':' && i+1 < query.length() && query[i+1] == ':') {
-                    tokens.push_back({OPERATOR, "::"});
-                    i += 2;
-                    continue;
-                }
-                if (i + 1 < query.size() && (query[i+1] == '=')) {
-                    op.push_back('=');
-                    i++;
-                }
-                tokens.push_back({OPERATOR, op});
-                i++;
-                continue;
-            }
-            error: 
-            throw std::runtime_error("Unexpected character in SQL: " + string(1, c));
-        }
-        return tokens;
+  size_t i = 0;
+  while (i < query.length()) {
+    char c = query[i];
+
+    // Skip whitespace
+    if (isspace(c)) {
+      i++;
+      continue;
     }
+
+    // Skip single-line comments (-- style)
+    if (c == '-' && i + 1 < query.length() && query[i + 1] == '-') {
+      while (i < query.length() && query[i] != '\n') {
+        i++;
+      }
+      continue;
+    }
+
+    // Skip multi-line comments (/* */ style)
+    if (c == '/' && i + 1 < query.length() && query[i + 1] == '*') {
+      i += 2;
+      while (i + 1 < query.length() &&
+             !(query[i] == '*' && query[i + 1] == '/')) {
+        i++;
+      }
+      i += 2; // Skip */
+      continue;
+    }
+
+    // Identifier/Keyword (can start with letter or underscore)
+    if (isalpha(c) || c == '_') {
+      size_t start = i;
+      while (i < query.length() && (isalnum(query[i]) || query[i] == '_')) {
+        i++;
+      }
+      string str = query.substr(start, i - start);
+      if (keywords.contains(str)) {
+        tokens.push_back(Token{KEYWORD, str});
+      } else {
+        tokens.push_back(Token{IDENTIFIER, str});
+      }
+      continue;
+    }
+
+    // Numbers (integers and decimals)
+    if (isdigit(c)) {
+      size_t start = i;
+      while (i < query.length() && isdigit(query[i])) {
+        i++;
+      }
+      // Check for decimal part
+      if (i < query.length() && query[i] == '.') {
+        i++;
+        while (i < query.length() && isdigit(query[i])) {
+          i++;
+        }
+      }
+      tokens.push_back(Token{NUMBER, query.substr(start, i - start)});
+      continue;
+    }
+
+    // String literal
+    if (c == '\'') {
+      i++;
+      string str_val;
+      while (i < query.size()) {
+        if (query[i] == '\'' && i + 1 < query.size() && query[i + 1] == '\'') {
+          // Escaped quote
+          str_val += '\'';
+          i += 2;
+        } else if (query[i] == '\'') {
+          break;
+        } else {
+          str_val += query[i];
+          i++;
+        }
+      }
+      tokens.push_back(Token{STRING, str_val});
+      if (i < query.size())
+        i++; // Skip closing quote
+      continue;
+    }
+
+    // Double-quoted identifiers
+    if (c == '"') {
+      i++;
+      size_t start = i;
+      while (i < query.size() && query[i] != '"') {
+        i++;
+      }
+      tokens.push_back(Token{IDENTIFIER, query.substr(start, i - start)});
+      if (i < query.size())
+        i++; // Skip closing quote
+      continue;
+    }
+
+    // Multi-character operators
+    if (i + 1 < query.length()) {
+      string two_char = query.substr(i, 2);
+      if (two_char == "<>" || two_char == "<=" || two_char == ">=" ||
+          two_char == "!=" || two_char == "::" || two_char == "||") {
+        tokens.push_back(Token{OPERATOR, two_char});
+        i += 2;
+        continue;
+      }
+    }
+
+    // Symbols
+    if (symbols.contains(string(1, c))) {
+      tokens.push_back(Token{SYMBOL, std::string(1, c)});
+      i++;
+      continue;
+    }
+
+    // Single-character operators
+    if (sql_ops.contains(string(1, c))) {
+      tokens.push_back(Token{OPERATOR, std::string(1, c)});
+      i++;
+      continue;
+    }
+
+    throw std::runtime_error("Unexpected character in SQL: " + string(1, c));
+  }
+  return tokens;
 }
+} // namespace DB

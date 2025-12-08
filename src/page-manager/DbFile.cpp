@@ -148,7 +148,7 @@ namespace DB {
         int flags{O_CREAT | O_RDWR};
         int fd = ::open(path.c_str(), flags, 0644);
         if (fd < 0) {
-            throw std::system_error(errno, std::generic_category(), std::format("File {} could not be created", path));
+            throw std::system_error(errno, std::generic_category(), "File " + path + " could not be created");
         }
         theFdMap[path] = fd;
         std::cout << "successfully added new file descriptor for filepath " << path << std::endl;

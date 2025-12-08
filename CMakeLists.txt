@@ -6,17 +6,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-fsanitize=address)
 add_link_options(-fsanitize=address)
 
-add_library( dblib STATIC 
+add_library( dblib STATIC
     src/sql-compiler/Lexer.cpp
     src/sql-compiler/Parser.cpp
 
-    src/page-manager/DbFile.cpp 
+    src/page-manager/DbFile.cpp
     src/page-manager/PageCache.cpp
 
     src/storage-manager/Table.cpp
     src/storage-manager/ops/StorageOps.cpp
     src/storage-manager/ops/Selection.cpp
     src/storage-manager/HeapFile.cpp
+
+    src/query-executor/QueryExecutor.cpp
     # src/transaction-processor/TScheduler.cpp
 )
 target_include_directories(dblib PUBLIC ${PROJECT_SOURCE_DIR}/include) # includes headers publicly, so any target that links dblib will also include headers
