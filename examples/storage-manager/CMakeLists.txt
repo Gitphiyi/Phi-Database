@@ -2,6 +2,7 @@ set(STORAGE_SRCS
     "${CMAKE_CURRENT_SOURCE_DIR}/table.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/storageops.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/heapfile.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/generate_dummy_data.cpp"
     )
 
 foreach(src IN LISTS STORAGE_SRCS)

@@ -56,7 +56,7 @@ std::vector<Token> tokenize_query(string& query);
 
 #### Parser
 
-The parser is a recursive descent parser that took a surprisingly long time to get right. This is a key step in any compiler, and while it is logically straightforward it ended up being quite a hassle to find and implement the SQL grammar. I ended up actually spending the most time on the parser as I had trouble with the FROM statement grammar in particular the JOINing part of it. Initially I tried to almost do a binary search 
+The parser is a recursive descent parser that took a surprisingly long time to get right. This is a key step in any compiler, and while it is logically straightforward it ended up being quite a hassle to find and implement the SQL grammar. I ended up actually spending the most time on the parser as I had trouble with the FROM statement grammar in particular the JOINing part of it. Initially I tried to almost do a binary search
 
 Supports:
 - SELECT with DISTINCT, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT
@@ -73,13 +73,13 @@ The parser outputs RA nodes directly instead of an intermediate SQL AST:
 ```cpp
 enum class RANodeType {
     TABLE_SCAN,
-    PROJECT,        
-    SELECT_OP,      
-    INNER_JOIN,     
+    PROJECT,
+    SELECT_OP,
+    INNER_JOIN,
     LEFT_JOIN, RIGHT_JOIN, FULL_JOIN,
-    CROSS_PRODUCT,  
-    GROUP_BY,       
-    SORT,           
+    CROSS_PRODUCT,
+    GROUP_BY,
+    SORT,
     LIMIT_OP,
     // ...
 };
@@ -87,7 +87,7 @@ enum class RANodeType {
 
 ### 3.2 Storage Manager
 
-The two building blocks I stored things in my database were heap files and pages. Every heap file contained a fix number of pages and each page was a set amount of data which I set to 128 bytes as default for testing and scaled higher for rows and such. This is obviously an obscenely small amount of bytes to set a page, but conceptually it served its purpose. The way it would work is that the table had insert and read row operations that served as the basic operations of read and write that every storage op needs. These then work on top of the HeapFile to basically determine where the data actually is to read it or concatenate on top of the existing HeapFiles with rows to allow future reads find it. The heapfiles each had a small metadata header where it would keep track of how many records are currently in the file and a pointer to the heapfile when the table is larger than the size of a heapfile. I realized late that this wasn't very IO optimal as if data was in one of the last heapfiles then I would sequentially have to do that many IOs to get to it. In addition, I would then have to do the additional IO to actually pull the page from disk into memory. At the time, I believed that I could heavily rely on the Page Cache to reduce the IOs made, but looking back on hindsight, this assumption was not true.
+The two building blocks I stored things in my database were heap files and pages. Every heap file contained a fixed number of pages and each page was a set amount of data which I set to 128 bytes as default for testing and scaled higher for rows and such. This is obviously an obscenely small amount of bytes to set a page, but conceptually it served its purpose. The way it would work is that the table had insert and read row operations that served as the basic operations of read and write that every storage op needs. These then work on top of the HeapFile to basically determine where the data actually is to read it or concatenate on top of the existing HeapFiles with rows to allow future reads find it. The heap files each had a small metadata header where it would keep track of how many records are currently in the file and a pointer to the heap file when the table is larger than the size of a heap file. I realized late that this wasn't very IO optimal as if data was in one of the last heap files then I would sequentially have to do that many IOs to get to it. In addition, I would then have to do the additional IO to actually pull the page from disk into memory. At the time, I believed that I could heavily rely on the Page Cache to reduce the IOs made, but looking back in hindsight, this assumption was not true. During the creation of HeapFile, I had to grapple with another problem which was whether the HeapFile should always read from disk or should it always try to pass through and read from the PageCache first. I ended up deciding that the table was in charge of checking the cache for a cheaper read from memory and when inserting a row the table would write through the cache but ultimately use the HeapFile path. I chose to do it in this fashion because the HeapFile should not be an interface over the Page Cache but over the disk. The Page Cache in a sense is "memory" for a database, and as such the table should always attempt to go through it, but ultimately it is not the responsibility of the HeapFile to peek into the cache to get the data. From building this, I realized that the system of a database really is very similar to the model of an OS except it is a "memory first" type of design.
 
 ### 3.3 Query Executor
 
@@ -103,15 +103,7 @@ struct StorageOps {
 
 ### 3.4 Page Manager
 
-When I was designing the DbFile is a singleton that manages all file descriptors. It handles:
-- read_at() / write_at() for positioned I/O
-- File path management with automatic directory creation
-- Locking support (shared/exclusive modes)
-
-PageCache does LRU-style caching with:
-- Page eviction when cache is full
-- Write-through policy for durability
-- Reference counting for pinned pages
+When I was designing the lower file system management, I intended DbFile to be a thin wrapper over the POSIX API. DbFile became a singleton that manages all file descriptors and it handles the read_at() and write_at() functions where given a Page as an input it will right it at a particular offset. This was used over the normal POSIX file api because I did not want to accidentally assign the wrong amount of bytes to write and the base unit of disk reads/writes are gonna come in at page size anyway. In addition it serves the nice purpose of automatically creating directories for heapfiles and such. Overall it was intended to be very simple. The PageCache lays right on top of it where it caches all the pages written and read. When the cache is full, the page cache will evict on a LRU basis. This part was pretty straightforward to implement and I did not have much trouble here.
 
 ### 3.5 Transaction Processing
 
@@ -127,9 +119,6 @@ void TScheduler::schedule_transaction() {
     // Adds COMMIT at end of transaction
 }
 ```
-
-Operations are partitioned by which table they modify, then lock/unlock pairs are inserted to ensure serializability.
-
 ## 5. Problems I Ran Into
 
 ### 5.1 Bazel to CMake
@@ -140,7 +129,7 @@ Bazel also has a steep learning curve with its BUILD files and dependency manage
 
 ### 5.2 Table vs HeapFile
 
-This was a weird system design issue I had where I didn't know how to bridge the gape between the notion of a Table and the Page Cache. While it seems like an easy design choice, the table should not work on pages at all and simply make requests to read or write. This abstracts the notion of tables being multiple pages large where the heapfile can operate on all of that making the entire implementation a lot cleaner. 
+This was a weird system design issue I had where I didn't know how to bridge the gape between the notion of a Table and the Page Cache. While it seems like an easy design choice, the table should not work on pages at all and simply make requests to read or write. This abstracts the notion of tables being multiple pages large where the heapfile can operate on all of that making the entire implementation a lot cleaner.
 
 ### 5.3 Struct Alignment
 
@@ -205,7 +194,7 @@ Operators return batches of 64 rows for cache efficiency. All disk access goes t
 
 ## 9. Conclusion
 
-I heavily underestimated the detail that goes into building a database. From a first glance, it genuinely didn't seem too difficult, and it certainly didn't help that I lacked deep familiarity with C++ and Linux internals going in. Over the course of researching and building different components (disk management, buffer pools, B+ trees) I gained a real understanding of what happens under the hood. While I didn't tackle harder challenges like concurrency control, query optimization, or full ACID compliance, building even a simplified version from first principles was a valuable learning experience that gave me a much deeper appreciation for production database systems.
+I heavily underestimated the detail that goes into building a database. From a first glance, it genuinely didn't seem too difficult, and it certainly didn't help that I lacked deep familiarity with C++ and Linux internals going in. Over the course of researching and building different components (disk management, buffer pools) I gained a real understanding of what happens under the hood. While I didn't tackle harder challenges like concurrency control, query optimization, or full ACID compliance, building even a simplified version from first principles was a valuable learning experience that gave me a much deeper appreciation for production database systems.
 
 ## References
 

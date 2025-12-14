@@ -5,6 +5,7 @@
 #include "general/Structs.hpp"
 #include "storage-manager/StorageStructs.hpp"
 #include "storage-manager/HeapFile.hpp"
+#include "page-manager/PageCache.hpp"
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -17,7 +18,7 @@ namespace DB {
 
     class Table {
         public:
-            Table(const string& name, Schema& schema, HeapFile& heapfile);
+            Table(const string& name, Schema& schema, HeapFile& heapfile, PageCache* pageCache = nullptr);
 
             static Table* get_table(const string& name, HeapFile& bufPool);
 
@@ -41,7 +42,9 @@ namespace DB {
             std::vector<u64>        theFreePages;
             Schema                  theSchema;
             HeapFile*               theHeapFile;
+            PageCache*              thePageCache;
 
             u64 allocPage();
+            Page* getPageFromCache(u32 pageId);
     };
 }
