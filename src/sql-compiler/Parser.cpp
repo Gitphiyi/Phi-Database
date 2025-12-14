@@ -79,9 +79,7 @@ void Parser::advance() {
     pos_++;
 }
 
-RANodePtr Parser::parse() { return parse_statement(); }
-
-RANodePtr Parser::parse_statement() {
+RANodePtr Parser::parse() {
   if (check("SELECT")) {
     return parse_select_statement();
   } else if (check("INSERT")) {

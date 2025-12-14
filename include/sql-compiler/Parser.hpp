@@ -31,7 +31,6 @@ private:
   Token consume(TokenType type, const string &error_msg);
   void advance();
 
-  RANodePtr parse_statement();
   RANodePtr parse_select_statement();
   RANodePtr parse_insert_statement();
   RANodePtr parse_update_statement();

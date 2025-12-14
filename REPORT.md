@@ -34,9 +34,9 @@ Beyond databases, I also intended to use this project to improve my system desig
 
 ## 2. Architecture
 
-The architecture of my database is a much simpler version than how difficult databases are. After building this database, the problem can be split into two: processing millions of transactions at once or improving latency once a query is received. There are of course a plethora of problems that are involved when addressing these two problems, and I chose to tackle the second one. Even within the second problem, there are various sections that can massively improve the system. I initially attempted to introduce a more intelligent SQL Query Optimizer given information about the tables, but I did not have enough time to do so. Thus, I focused a majority of my efforts on simply building a working system and some latency improvements on the storage operation side.
+The architecture of my database is intentionally simplified compared to production systems. After building the prototype, I realized the problem space splits into two broad goals: processing millions of transactions concurrently or reducing latency for an individual query. Each goal contains countless subproblems, and I chose to focus on the latter. I initially planned to add a cost-based SQL query optimizer, but time constraints meant I concentrated on delivering a correct system with a few targeted storage optimizations instead.
 
-The system can be split into four main layers. SQL Querying at the top which gets tokenized and parsed into a Relational Algebra tree. Then the query executor builds an operator tree from that and runs it against the storage layer, which handles all the disk I/O through fixed-size pages. Transaction processing sits alongside to handle operation scheduling.
+The system is organized into four main layers. SQL queries are tokenized and parsed into a relational algebra tree. The query executor turns that tree into an operator pipeline and runs it against the storage layer, which performs all disk I/O through fixed-size pages. Transaction processing sits alongside these layers to schedule operations.
 
 ### Component Breakdown
 
@@ -48,7 +48,7 @@ The SQL Compiler spans 4 files (lexer, parser, AST definitions). The Query Execu
 
 #### Lexer
 
-The lexer tokenizes SQL into a stream of tokens. Handles 40+ keywords, identifiers, literals (int, float, string, bool), operators, and both comment styles. This was very easy to implement as it essentially converts a SQL query into a list of tokens that can be used by the parser to create the AST.
+The lexer tokenizes SQL into a stream of tokens. It handles 40+ keywords, identifiers, literals (int, float, string, bool), operators, and both comment styles. This component was straightforward because it simply converts a SQL query into a list of tokens for the parser to consume.
 
 ```cpp
 std::vector<Token> tokenize_query(string& query);
@@ -56,7 +56,7 @@ std::vector<Token> tokenize_query(string& query);
 
 #### Parser
 
-The parser is a recursive descent parser that took a surprisingly long time to get right. This is a key step in any compiler, and while it is logically straightforward it ended up being quite a hassle to find and implement the SQL grammar. I ended up actually spending the most time on the parser as I had trouble with the FROM statement grammar in particular the JOINing part of it. Initially I tried to almost do a binary search
+The parser is a recursive descent parser that took a surprisingly long time to get right. This is a key step in any compiler, and while it is logically straightforward, it ended up being a hassle to nail down the SQL grammar. I spent the most time on the FROM clause, especially the JOIN portion. Initially I tried a binary-search-style approach where I recursively combined joins from halves because I assumed the AST would be a balanced tree. That was wrong—the grammar composes joins strictly from left to right. After rewriting the grammar to match SQL-92's left-associative JOINs, I started to follow the published grammar closely. At first I thought the SQL grammar was insufficient, so I bounced between documentation sets; only after fixing the bug did I realize that implementing a language grammar is literally about following each production as written. For example, the SQL-92 BNF for FROM constrains the tokens to commas, table references, or collection member declarations; the parser just has to check which token appears, consume the corresponding production, and advance. Building this parser demystified parsing for me. It highlighted how recursion mirrors the grammar and why recursive descent feels more natural than a loop-based approach here.
 
 Supports:
 - SELECT with DISTINCT, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT
@@ -87,11 +87,13 @@ enum class RANodeType {
 
 ### 3.2 Storage Manager
 
-The two building blocks I stored things in my database were heap files and pages. Every heap file contained a fixed number of pages and each page was a set amount of data which I set to 128 bytes as default for testing and scaled higher for rows and such. This is obviously an obscenely small amount of bytes to set a page, but conceptually it served its purpose. The way it would work is that the table had insert and read row operations that served as the basic operations of read and write that every storage op needs. These then work on top of the HeapFile to basically determine where the data actually is to read it or concatenate on top of the existing HeapFiles with rows to allow future reads find it. The heap files each had a small metadata header where it would keep track of how many records are currently in the file and a pointer to the heap file when the table is larger than the size of a heap file. I realized late that this wasn't very IO optimal as if data was in one of the last heap files then I would sequentially have to do that many IOs to get to it. In addition, I would then have to do the additional IO to actually pull the page from disk into memory. At the time, I believed that I could heavily rely on the Page Cache to reduce the IOs made, but looking back in hindsight, this assumption was not true. During the creation of HeapFile, I had to grapple with another problem which was whether the HeapFile should always read from disk or should it always try to pass through and read from the PageCache first. I ended up deciding that the table was in charge of checking the cache for a cheaper read from memory and when inserting a row the table would write through the cache but ultimately use the HeapFile path. I chose to do it in this fashion because the HeapFile should not be an interface over the Page Cache but over the disk. The Page Cache in a sense is "memory" for a database, and as such the table should always attempt to go through it, but ultimately it is not the responsibility of the HeapFile to peek into the cache to get the data. From building this, I realized that the system of a database really is very similar to the model of an OS except it is a "memory first" type of design.
+The two building blocks I used for storage are heap files and fixed-size pages. Each heap file contains a fixed number of pages, and each page has a configurable size (128 bytes for early testing, scaled up for realistic workloads). That tiny size is obviously impractical in production but kept the concepts manageable. Tables expose insert/read-row operations, and those operations sit on top of HeapFile, which is responsible for locating the correct page or appending new ones. Every heap file keeps a small metadata header with the record count and a pointer to the next heap file when the table grows beyond a single file.
+
+I realized late that this layout is not very I/O optimal: if a record lives in one of the last heap files, the engine may need to traverse each file sequentially before issuing yet another I/O to read the page itself. I originally assumed the page cache would hide most of that cost, but that assumption turned out to be wrong. Another design debate was whether HeapFile should consult the page cache directly. I ultimately decided the table layer owns cache lookups because HeapFile is conceptually an interface to disk, not memory. The page cache behaves like the database's memory hierarchy, and the table code should try it first, but HeapFile should not peek into it. Building this component reinforced how similar database storage is to an OS design except that the emphasis is "memory first."
 
 ### 3.3 Query Executor
 
-This essentially acted as a Generator function in python. Through some basic research, I decided to just use the Volcano iterator model as it is the most common iterator model, and it basically runs through the RA tree applying operations in a sort of functional paradigm. I implemented the basic operations like SeqScan, IndexScan, FilterOp, ProjectOp, LimitOp, CrossProductOp, NestedLoopJoin.
+This component essentially acts like a generator function in Python. After some research I chose the Volcano iterator model because it is ubiquitous and maps cleanly to relational algebra: each operator exposes open/next/close and pulls tuples from its children. I implemented the basic operators like SeqScan, FilterOp, ProjectOp, LimitOp, CrossProductOp, and NestedLoopJoin.
 
 ```cpp
 struct StorageOps {
@@ -103,7 +105,7 @@ struct StorageOps {
 
 ### 3.4 Page Manager
 
-When I was designing the lower file system management, I intended DbFile to be a thin wrapper over the POSIX API. DbFile became a singleton that manages all file descriptors and it handles the read_at() and write_at() functions where given a Page as an input it will right it at a particular offset. This was used over the normal POSIX file api because I did not want to accidentally assign the wrong amount of bytes to write and the base unit of disk reads/writes are gonna come in at page size anyway. In addition it serves the nice purpose of automatically creating directories for heapfiles and such. Overall it was intended to be very simple. The PageCache lays right on top of it where it caches all the pages written and read. When the cache is full, the page cache will evict on a LRU basis. This part was pretty straightforward to implement and I did not have much trouble here.
+When I designed the lower file-system layer, I intended DbFile to be a thin wrapper over the POSIX API. DbFile is a singleton that manages all file descriptors and exposes `read_at()`/`write_at()` helpers so a Page can be written at a particular offset safely. I preferred this over sprinkling raw POSIX calls everywhere because it prevents mistakes in byte counts and forces all I/O to use page-sized buffers. It also handily ensures the backing directories exist. The PageCache sits directly on top, caching pages on reads and writes and evicting them in an LRU order when full. This layer was relatively straightforward to implement.
 
 ### 3.5 Transaction Processing
 
@@ -129,15 +131,15 @@ Bazel also has a steep learning curve with its BUILD files and dependency manage
 
 ### 5.2 Table vs HeapFile
 
-This was a weird system design issue I had where I didn't know how to bridge the gape between the notion of a Table and the Page Cache. While it seems like an easy design choice, the table should not work on pages at all and simply make requests to read or write. This abstracts the notion of tables being multiple pages large where the heapfile can operate on all of that making the entire implementation a lot cleaner.
+This was a tricky system design issue where I didn't know how to bridge the gap between the notion of a table and the page cache. While it seems like an easy decision in hindsight, the table should not manipulate pages directly; it should issue logical read/write requests. That abstraction hides the fact that tables span multiple pages and lets HeapFile manage the details, which keeps the implementation much cleaner.
 
 ### 5.3 Struct Alignment
 
-A big issue I grappled with structs is that structs are padded by the compiler to align with the memory line. This is especially finnicky because when I went to read the files I would see random bytes that I did not specify from the struct, and thus I would be very confused where they come from. I didn't realize that to actually keep a struct the way it was you needed to write __attribute__ before it to signal to Clang that it can keep it the way it is.
+A big issue I grappled with was struct padding. Compilers align structs to natural boundaries, which meant that when I inspected files I saw seemingly random bytes I never wrote. I eventually realized I needed to mark these structs with `__attribute__((packed))` (or equivalent) so Clang would keep the layout I expected.
 
 ### 5.4 Pre Optimizations
 
-Probably the most important thing i learned working on this project was the dangers of pre optimizations. I really never learned how slow programming could be until I started worrying about all the small things before the big system could even be built. A big example of this was when I was building page cache. I really really over thought about it at first to make sure that every page was clearly in memory and I was using the minimum number of IOs as possible when in reality it all was going to change since my entire project structure changed. My intended approach was to go bottom up because I thought the top would simply be easy to interface, but waht I realized was that I had to keep changing the things I already built to accomadate the inputs that were being fed to it. This essentially made all the optimizations I did useless as I had to delete my work and redo it. This was in fact the biggest lesson I learned in that I need to get a MVP working product out before I think about any optimizations.
+Probably the most important thing I learned on this project was the danger of premature optimization. I never realized how much progress it could destroy until I obsessed over small details before the system even ran end to end. The page cache is the best example: I overthought eviction policies and I/O counts even though the surrounding components were still in flux, which meant I rewrote or discarded most of that work. I originally attacked the stack from the bottom up because I assumed the upper layers would be easy to interface with, but in reality I kept changing the lower layers to accommodate new requirements. The big lesson was to build an MVP first and worry about optimizations later.
 
 ### 5.5 Build Management
 
@@ -145,11 +147,11 @@ At first I used Bazel as my build system as a lot of my friends recommended it t
 
 ### 5.6 Memory Management Bugs
 
-Working on memory bugs after using garbage collection was a bit of a change. I heavily relied on Address Sanitizer to catch cases where I forgot to malloc and as the size of the repo grew I had to structure the codebase well so I could hunt down memory leaks easily. I really wanted to follow a more C like structure coding style and avoided using smart pointers which would have made this problem a LOT easier.
+Working on memory bugs after years of garbage-collected languages was an adjustment. I relied heavily on AddressSanitizer to catch cases where I forgot to allocate or freed the wrong thing, and as the codebase grew I had to structure it carefully so I could hunt down leaks. I intentionally stuck to a C-like style and avoided smart pointers, which made this both harder and more educational.
 
 ### 5.7 POSIX IO issues
 
-There were a couple issues about POSIX API that I did not realize and tripped me up. The first one is the on write() the returned number of bytes can be LESS than the requested number of bytes to write. This definitely was not something I expected, as usually in these cases I would think the writes would simply fail. This caused a really frustrating bug where there were non deterministic writes that did not fully write all the bytes into a file and when I checked the bytes were not what I requested. This is because when I checked my writes I was not actually checking to see if it wrote all of them correctly and just checking that it did not write no bytes at all.
+There were a couple of POSIX API details I didn't know that tripped me up. The big one is that `write()` may return fewer bytes than requested without being an error. I assumed the call either succeeded fully or failed, so I never checked the return value carefully. That led to a nasty bug where writes were nondeterministic and the bytes on disk didn't match what I thought I had written. Adding explicit loops to retry partial writes fixed it.
 
 
 ## 6. Results
@@ -199,9 +201,8 @@ I heavily underestimated the detail that goes into building a database. From a f
 ## References
 
 1. "Database System Concepts" by Silberschatz, Korth, and Sudarshan
-2. Berkeley DB Architecture Orcal White Paper
+2. Berkeley DB Architecture Oracle White Paper
 3. Duke Devils Database (DDB)
 4. SQL-92 Specification
 5. Phoenix SQL Grammar Documentation
 6. https://craftinginterpreters.com/introduction.html
-
