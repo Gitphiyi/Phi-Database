@@ -371,7 +371,7 @@ Reading Linux manpages for `pread`/`pwrite` revealed subtleties I hadn't conside
 
 ## 10. Conclusion
 
-Building a database from scratch is doable and teaches you a lot. Mine isn't production-ready but it works well enough to demonstrate the core concepts. The most valuable part was understanding how a query flows from SQL text all the way down to disk I/O, and how transactions maintain consistency across operations.
+I heavily underestimated the detail that goes into building a database. From a first glance, it genuinely didn't seem too difficult, and it certainly didn't help that I lacked deep familiarity with C++ and Linux internals going in. Over the course of researching and building different components (disk management, buffer pools, B+ trees) I gained a real understanding of what happens under the hood. While I didn't tackle harder challenges like concurrency control, query optimization, or full ACID compliance, building even a simplified version from first principles was a valuable learning experience that gave me a much deeper appreciation for production database systems.
 
 ## References
 
