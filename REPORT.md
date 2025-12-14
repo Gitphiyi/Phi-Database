@@ -36,11 +36,11 @@ Beyond databases, I also intended to use this project to improve my system desig
 
 The architecture of my database is a much simpler version than how difficult databases are. After building this database, the problem can be split into two: processing millions of transactions at once or improving latency once a query is received. There are of course a plethora of problems that are involved when addressing these two problems, and I chose to tackle the second one. Even within the second problem, there are various sections that can massively improve the system. I initially attempted to introduce a more intelligent SQL Query Optimizer given information about the tables, but I did not have enough time to do so. Thus, I focused a majority of my efforts on simply building a working system and some latency improvements on the storage operation side.
 
-The system can be split into four main layers. SQL Querying at the top which gets tokenized and parsed into a Relational Algebra tree. Then the query executor builds an operator tree from that and runs it against the storage layer, which handles all the disk I/O through fixed-size pages. Transaction processing sits alongside to handle operation scheduling and logging.
+The system can be split into four main layers. SQL Querying at the top which gets tokenized and parsed into a Relational Algebra tree. Then the query executor builds an operator tree from that and runs it against the storage layer, which handles all the disk I/O through fixed-size pages. Transaction processing sits alongside to handle operation scheduling.
 
 ### Component Breakdown
 
-The SQL Compiler spans 4 files (lexer, parser, AST definitions). The Query Executor handles the RA tree to operator translation. Storage Manager covers tables, heap files, and rows. Page Manager handles file I/O and caching. Transaction processing handles scheduling and logging. The rest is shared types and utilities.
+The SQL Compiler spans 4 files (lexer, parser, AST definitions). The Query Executor handles the RA tree to operator translation. Storage Manager covers tables, heap files, and rows. Page Manager handles file I/O and caching. Transaction processing handles scheduling. The rest is shared types and utilities.
 
 ## 3. Implementation
 
@@ -48,7 +48,7 @@ The SQL Compiler spans 4 files (lexer, parser, AST definitions). The Query Execu
 
 #### Lexer
 
-The lexer tokenizes SQL into a stream of tokens. Handles 40+ keywords, identifiers, literals (int, float, string, bool), operators, and both comment styles.
+The lexer tokenizes SQL into a stream of tokens. Handles 40+ keywords, identifiers, literals (int, float, string, bool), operators, and both comment styles. This was very easy to implement as it essentially converts a SQL query into a list of tokens that can be used by the parser to create the AST.
 
 ```cpp
 std::vector<Token> tokenize_query(string& query);
@@ -56,7 +56,7 @@ std::vector<Token> tokenize_query(string& query);
 
 #### Parser
 
-The parser is a recursive descent parser. Took forever to get right.
+The parser is a recursive descent parser that took a surprisingly long time to get right. This is a key step in any compiler, and while it is logically straightforward it ended up being quite a hassle to find and implement the SQL grammar. I ended up actually spending the most time on the parser as I had trouble with the FROM statement grammar in particular the JOINing part of it. Initially I tried to almost do a binary search 
 
 Supports:
 - SELECT with DISTINCT, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT
@@ -73,21 +73,17 @@ The parser outputs RA nodes directly instead of an intermediate SQL AST:
 ```cpp
 enum class RANodeType {
     TABLE_SCAN,
-    PROJECT,        // π
-    SELECT_OP,      // σ
-    INNER_JOIN,     // ⋈
+    PROJECT,        
+    SELECT_OP,      
+    INNER_JOIN,     
     LEFT_JOIN, RIGHT_JOIN, FULL_JOIN,
-    CROSS_PRODUCT,  // ×
-    GROUP_BY,       // γ
-    SORT,           // τ
+    CROSS_PRODUCT,  
+    GROUP_BY,       
+    SORT,           
     LIMIT_OP,
     // ...
 };
 ```
-
-#### Query Optimization
-
-The system includes an OptimizerCache structure for caching optimization decisions. The main optimization currently implemented is converting the SQL directly to a Relational Algebra tree that can be traversed top-down for execution. Future work includes cost-based optimization for join ordering.
 
 ### 3.2 Storage Manager
 
@@ -299,44 +295,32 @@ Created the Query Executor to bridge everything. Should have defined interfaces 
 
 The database can:
 
-1. Parse complex SQL into RA trees. A query like:
+1. Parse simple SQL queries into RA trees. A query like:
 ```sql
 SELECT department, COUNT(*) as emp_count
 FROM employees WHERE salary > 50000
 GROUP BY department HAVING COUNT(*) > 5
 ORDER BY emp_count DESC LIMIT 10
 ```
-
-Produces a proper RA tree with Limit -> Sort -> Project -> GroupBy -> Select -> TableScan.
-
 2. Create tables with schemas
 3. Execute simple queries through the operator pipeline
 4. Schedule transactions with proper lock ordering
 
 Operators return batches of 64 rows for cache efficiency. All disk access goes through fixed-size pages. AddressSanitizer is on for all builds.
 
-## 7. Future Work
+## 7. Problems and Issues
 
-Short term:
-- Finish row insertion (currently stubbed)
-- Implement UPDATE/DELETE execution
-- Cost-based query optimization with index selection
+### Pre Optimizations
 
-Long term:
-- Full ACID transactions with WAL (write-ahead logging)
-- Deadlock detection in the lock manager
-- Recovery manager using the transaction log
-- Maybe distribution/sharding
+Probably the most important thing i learned working on this project was the dangers of pre optimizations. I really never learned how slow programming could be until I started worrying about all the small things before the big system could even be built. A big example of this was when I was building page cache. I really really over thought about it at first to make sure that every page was clearly in memory and I was using the minimum number of IOs as possible when in reality it all was going to change since my entire project structure changed. My intended approach was to go bottom up because I thought the top would simply be easy to interface, but waht I realized was that I had to keep changing the things I already built to accomadate the inputs that were being fed to it. This essentially made all the optimizations I did useless as I had to delete my work and redo it. This was in fact the biggest lesson I learned in that I need to get a MVP working product out before I think about any optimizations.
 
-## 8. Problems and Issues
+### Build Management
 
-### Build System Growing Pains
-
-The Bazel to CMake migration cost me a week. Bazel's sandboxed execution model made it impossible to quickly iterate on storage code - every time I wanted to check what bytes were actually written to a heap file, I had to figure out where Bazel hid the outputs. For a project that requires constant low-level debugging, this was unworkable.
+At first I used Bazel as my build system as a lot of my friends recommended it to me from their experience. To be honest, it was a very nice system to use and built very quickly, but an issue I had was that Bazel's sandboxed execution model made it impossible to check the created files I made were correct. When I was working on DbFiles and wanted to ensure the test bytes I wrote were exactly what I wrote, I spent around 2-3 days wondering where the file was actually stored. I realized too late that it was actually in a random sandboxed folder I couldn't really access and this was the intended implementation of Bazel. Coming from using basic MakeFiles this was a big surprise, so I ended up making the switch to CMake just to be able to easily test file writes and know where my built executables were.
 
 ### Memory Management Bugs
 
-Working in C++ after years of garbage-collected languages meant relearning memory discipline. AddressSanitizer caught several use-after-free bugs in the page cache where I was returning pointers to evicted pages. The fix required proper reference counting and ensuring pages stay pinned while in use.
+Working on memory bugs after using garbage collection was a bit of a change. I heavily relied on Address Sanitizer to catch cases where I forgot to malloc and as the size of the repo grew I had to structure the codebase well so I could hunt down memory leaks easily. I really wanted to follow a more C like structure coding style and avoided using smart pointers which would have made this problem a LOT easier.
 
 ### Cross-Component Type Conflicts
 
@@ -346,7 +330,7 @@ Building the compiler and storage manager in isolation led to duplicate type def
 
 Reading Linux manpages for `pread`/`pwrite` revealed subtleties I hadn't considered - partial reads, signal interruptions, file descriptor limits. The DbFile class went through several iterations to handle these correctly.
 
-## 9. What I Learned
+## 8. What I Learned
 
 ### Technical
 
@@ -369,7 +353,7 @@ Reading Linux manpages for `pread`/`pwrite` revealed subtleties I hadn't conside
 - The catalog (table metadata) is needed everywhere
 - Transaction ordering is tricky to get right
 
-## 10. Conclusion
+## 9. Conclusion
 
 I heavily underestimated the detail that goes into building a database. From a first glance, it genuinely didn't seem too difficult, and it certainly didn't help that I lacked deep familiarity with C++ and Linux internals going in. Over the course of researching and building different components (disk management, buffer pools, B+ trees) I gained a real understanding of what happens under the hood. While I didn't tackle harder challenges like concurrency control, query optimization, or full ACID compliance, building even a simplified version from first principles was a valuable learning experience that gave me a much deeper appreciation for production database systems.
 

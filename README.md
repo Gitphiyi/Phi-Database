@@ -10,3 +10,6 @@ Running MakeFile: **make -j**
 
 
 
+
+#TODO: go back to snake case
+#TODO: get my implementation of table fixed

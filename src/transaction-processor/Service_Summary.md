@@ -1,2 +1,0 @@
-# Transaction Processor
-The transaction processor takes in a list of storage operations from multiple clients. The processor schedules and logs the storage operations from all the different transactions to be executed by the Storage Manager.
