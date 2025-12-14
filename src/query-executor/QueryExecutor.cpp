@@ -635,42 +635,4 @@ Row* NestedLoopJoin::combineRows(Row* left_row, Row* right_row) {
     return create_row(static_cast<int>(combined_values.size()), std::move(combined_values));
 }
 
-IndexScan::IndexScan(Table& table, int columnIndex, const datatype& key, size_t batch_size)
-    : table_(table), columnIndex_(columnIndex), key_(key),
-      lowKey_(0), highKey_(0), isRangeScan_(false),
-      batchSize_(batch_size), currentIdx_(0) {}
-
-IndexScan::IndexScan(Table& table, int columnIndex, const datatype& low, const datatype& high, size_t batch_size)
-    : table_(table), columnIndex_(columnIndex), key_(0),
-      lowKey_(low), highKey_(high), isRangeScan_(true),
-      batchSize_(batch_size), currentIdx_(0) {}
-
-void IndexScan::open() {
-    currentIdx_ = 0;
-    if (isRangeScan_) {
-        matchingRowIds_ = table_.indexRangeLookup(columnIndex_, lowKey_, highKey_);
-    } else {
-        matchingRowIds_ = table_.indexLookup(columnIndex_, key_);
-    }
-}
-
-std::vector<Row*> IndexScan::next() {
-    std::vector<Row*> result;
-
-    while (result.size() < batchSize_ && currentIdx_ < matchingRowIds_.size()) {
-        Row* row = table_.read_row(matchingRowIds_[currentIdx_]);
-        if (row) {
-            result.push_back(row);
-        }
-        currentIdx_++;
-    }
-
-    return result;
-}
-
-void IndexScan::close() {
-    matchingRowIds_.clear();
-    currentIdx_ = 0;
-}
-
 } // namespace DB

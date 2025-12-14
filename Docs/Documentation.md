@@ -5,7 +5,6 @@
 - Parser
 - Code Generator
 - Virtual Machine
-- B+ Tree
 - Pager
     - Loads pages of data into disk
     - Controls transactions

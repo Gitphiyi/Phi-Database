@@ -24,7 +24,7 @@ const Token &Parser::peek(int offset) const {
   return tokens_[idx];
 }
 
-bool Parser::isAtEnd() const {
+bool Parser::is_at_end() const {
   return pos_ >= tokens_.size() || current().value == ";";
 }
 
@@ -79,60 +79,53 @@ void Parser::advance() {
     pos_++;
 }
 
-RANodePtr Parser::parse() { return parseStatement(); }
-RANodePtr Parser::parseStatement() {
+RANodePtr Parser::parse() { return parse_statement(); }
+
+RANodePtr Parser::parse_statement() {
   if (check("SELECT")) {
-    return parseSelectStatement();
+    return parse_select_statement();
   } else if (check("INSERT")) {
-    return parseInsertStatement();
+    return parse_insert_statement();
   } else if (check("UPDATE")) {
-    return parseUpdateStatement();
+    return parse_update_statement();
   } else if (check("DELETE")) {
-    return parseDeleteStatement();
+    return parse_delete_statement();
   } else if (check("CREATE")) {
-    return parseCreateTableStatement();
+    return parse_create_table_statement();
   } else if (check("DROP")) {
-    return parseDropTableStatement();
+    return parse_drop_table_statement();
   }
   throw std::runtime_error("Unknown statement type: " + current().value);
 }
 
-// SELECT
-RANodePtr Parser::parseSelectStatement() {
+RANodePtr Parser::parse_select_statement() {
   consume("SELECT", "Expected SELECT");
 
-  // parse cols
-  SelectInfo select_info = parseSelectClause();
-  // parse FROM clause
-  RANodePtr from_node = parseFromClause();
-  // parse optional WHERE clause
+  SelectInfo select_info = parse_select_clause();
+  RANodePtr from_node = parse_from_clause();
   ExprPtr where_predicate = nullptr;
   if (check("WHERE")) {
-    where_predicate = parseWhereClause();
+    where_predicate = parse_where_clause();
   }
-  // parse optional GROUP BY clause
   std::vector<ExprPtr> group_by_exprs;
   if (check("GROUP")) {
-    group_by_exprs = parseGroupByClause();
+    group_by_exprs = parse_group_by_clause();
   }
 
-  // parse optional HAVING clause
   ExprPtr having_predicate = nullptr;
   if (check("HAVING")) {
-    having_predicate = parseHavingClause();
+    having_predicate = parse_having_clause();
   }
 
-  // parse optional ORDER BY clause
   std::vector<SortSpec> order_specs;
   if (check("ORDER")) {
-    order_specs = parseOrderByClause();
+    order_specs = parse_order_by_clause();
   }
 
-  // parse optional LIMIT clause
   int64_t limit_count = -1;
   int64_t offset_count = 0;
   if (check("LIMIT") || check("OFFSET")) {
-    auto [limit, offset] = parseLimitClause();
+    auto [limit, offset] = parse_limit_clause();
     limit_count = limit;
     offset_count = offset;
   }
@@ -171,7 +164,7 @@ RANodePtr Parser::parseSelectStatement() {
   return result;
 }
 
-Parser::SelectInfo Parser::parseSelectClause() {
+Parser::SelectInfo Parser::parse_select_clause() {
   SelectInfo info;
 
   if (match("DISTINCT")) {
@@ -197,7 +190,7 @@ Parser::SelectInfo Parser::parseSelectClause() {
       info.projections.push_back(nullptr);
       info.aliases.push_back("");
     } else {
-      ExprPtr expr = parseExpression();
+      ExprPtr expr = parse_expression();
       string alias;
 
       if (match("AS")) {
@@ -215,28 +208,24 @@ Parser::SelectInfo Parser::parseSelectClause() {
   return info;
 }
 
-// ============================================================================
-// FROM Clause
-// ============================================================================
-
-RANodePtr Parser::parseFromClause() {
+RANodePtr Parser::parse_from_clause() {
   consume("FROM", "Expected FROM");
 
-  RANodePtr result = parseTableReference();
+  RANodePtr result = parse_table_reference();
 
   while (check("JOIN") || check("INNER") || check("LEFT") || check("RIGHT") ||
          check("FULL") || check("CROSS") || check("NATURAL") || check(",")) {
-    result = parseJoinClause(result);
+    result = parse_join_clause(result);
   }
 
   return result;
 }
 
-RANodePtr Parser::parseTableReference() {
+RANodePtr Parser::parse_table_reference() {
   if (check("(")) {
     advance();
     if (check("SELECT")) {
-      RANodePtr subquery = parseSelectStatement();
+      RANodePtr subquery = parse_select_statement();
       consume(")", "Expected ')' after subquery");
 
       string alias;
@@ -255,7 +244,7 @@ RANodePtr Parser::parseTableReference() {
       }
       return subquery;
     }
-    RANodePtr inner = parseTableReference();
+    RANodePtr inner = parse_table_reference();
     consume(")", "Expected ')'");
     return inner;
   }
@@ -277,12 +266,12 @@ RANodePtr Parser::parseTableReference() {
   return RANode::makeTableScan(table_name, alias);
 }
 
-RANodePtr Parser::parseJoinClause(RANodePtr left) {
+RANodePtr Parser::parse_join_clause(RANodePtr left) {
   RANodeType join_type = RANodeType::INNER_JOIN;
   bool is_natural = false;
 
   if (match(",")) {
-    RANodePtr right = parseTableReference();
+    RANodePtr right = parse_table_reference();
     return RANode::makeJoin(RANodeType::CROSS_PRODUCT, left, right, nullptr);
   }
 
@@ -293,7 +282,7 @@ RANodePtr Parser::parseJoinClause(RANodePtr left) {
   if (match("CROSS")) {
     join_type = RANodeType::CROSS_PRODUCT;
   } else if (match("LEFT")) {
-    match("OUTER"); // OUTER is optional
+    match("OUTER");
     join_type = RANodeType::LEFT_JOIN;
   } else if (match("RIGHT")) {
     match("OUTER");
@@ -307,12 +296,12 @@ RANodePtr Parser::parseJoinClause(RANodePtr left) {
 
   consume("JOIN", "Expected JOIN");
 
-  RANodePtr right = parseTableReference();
+  RANodePtr right = parse_table_reference();
 
   ExprPtr condition = nullptr;
   if (join_type != RANodeType::CROSS_PRODUCT && !is_natural) {
     if (match("ON")) {
-      condition = parseExpression();
+      condition = parse_expression();
     } else if (match("USING")) {
       consume("(", "Expected '(' after USING");
       std::vector<string> using_cols;
@@ -338,45 +327,29 @@ RANodePtr Parser::parseJoinClause(RANodePtr left) {
   return RANode::makeJoin(join_type, left, right, condition);
 }
 
-// ============================================================================
-// WHERE Clause
-// ============================================================================
-
-ExprPtr Parser::parseWhereClause() {
+ExprPtr Parser::parse_where_clause() {
   consume("WHERE", "Expected WHERE");
-  return parseExpression();
+  return parse_expression();
 }
 
-// ============================================================================
-// GROUP BY Clause
-// ============================================================================
-
-std::vector<ExprPtr> Parser::parseGroupByClause() {
+std::vector<ExprPtr> Parser::parse_group_by_clause() {
   consume("GROUP", "Expected GROUP");
   consume("BY", "Expected BY after GROUP");
 
   std::vector<ExprPtr> exprs;
   do {
-    exprs.push_back(parseExpression());
+    exprs.push_back(parse_expression());
   } while (match(","));
 
   return exprs;
 }
 
-// ============================================================================
-// HAVING Clause
-// ============================================================================
-
-ExprPtr Parser::parseHavingClause() {
+ExprPtr Parser::parse_having_clause() {
   consume("HAVING", "Expected HAVING");
-  return parseExpression();
+  return parse_expression();
 }
 
-// ============================================================================
-// ORDER BY Clause
-// ============================================================================
-
-std::vector<SortSpec> Parser::parseOrderByClause() {
+std::vector<SortSpec> Parser::parse_order_by_clause() {
   consume("ORDER", "Expected ORDER");
   consume("BY", "Expected BY after ORDER");
 
@@ -384,7 +357,6 @@ std::vector<SortSpec> Parser::parseOrderByClause() {
   do {
     SortSpec spec;
 
-    // Could be table.column or just column
     string first = consume(IDENTIFIER, "Expected column name").value;
     if (match(".")) {
       spec.table = first;
@@ -393,16 +365,14 @@ std::vector<SortSpec> Parser::parseOrderByClause() {
       spec.column = first;
     }
 
-    // ASC or DESC
     if (match("ASC")) {
       spec.ascending = true;
     } else if (match("DESC")) {
       spec.ascending = false;
     } else {
-      spec.ascending = true; // Default is ASC
+      spec.ascending = true;
     }
 
-    // NULLS FIRST or NULLS LAST
     if (match("NULLS")) {
       if (match("FIRST")) {
         spec.nulls_first = true;
@@ -417,18 +387,13 @@ std::vector<SortSpec> Parser::parseOrderByClause() {
   return specs;
 }
 
-// ============================================================================
-// LIMIT Clause
-// ============================================================================
-
-std::pair<int64_t, int64_t> Parser::parseLimitClause() {
+std::pair<int64_t, int64_t> Parser::parse_limit_clause() {
   int64_t limit = -1;
   int64_t offset = 0;
 
   if (match("LIMIT")) {
     limit = std::stoll(consume(NUMBER, "Expected number after LIMIT").value);
 
-    // LIMIT x, y syntax (MySQL style: LIMIT offset, count)
     if (match(",")) {
       offset = limit;
       limit = std::stoll(consume(NUMBER, "Expected number after ','").value);
@@ -442,51 +407,47 @@ std::pair<int64_t, int64_t> Parser::parseLimitClause() {
   return {limit, offset};
 }
 
-// ============================================================================
-// Expression Parsing (Precedence Climbing)
-// ============================================================================
+ExprPtr Parser::parse_expression() { return parse_or_expression(); }
 
-ExprPtr Parser::parseExpression() { return parseOrExpression(); }
-
-ExprPtr Parser::parseOrExpression() {
-  ExprPtr left = parseAndExpression();
+ExprPtr Parser::parse_or_expression() {
+  ExprPtr left = parse_and_expression();
 
   while (match("OR")) {
-    ExprPtr right = parseAndExpression();
+    ExprPtr right = parse_and_expression();
     left = Expression::makeBinaryOp(BinaryOp::OR, left, right);
   }
 
   return left;
 }
 
-ExprPtr Parser::parseAndExpression() {
-  ExprPtr left = parseNotExpression();
+ExprPtr Parser::parse_and_expression() {
+  ExprPtr left = parse_not_expression();
 
   while (match("AND")) {
-    ExprPtr right = parseNotExpression();
+    ExprPtr right = parse_not_expression();
     left = Expression::makeBinaryOp(BinaryOp::AND, left, right);
   }
 
   return left;
 }
 
-ExprPtr Parser::parseNotExpression() {
+ExprPtr Parser::parse_not_expression() {
   if (match("NOT")) {
-    ExprPtr operand = parseNotExpression();
+    ExprPtr operand = parse_not_expression();
     return Expression::makeUnaryOp(UnaryOp::NOT, operand);
   }
-  return parseComparisonExpression();
+  return parse_comparison_expression();
 }
 
-ExprPtr Parser::parseComparisonExpression() {
-  ExprPtr left = parseAddSubExpression();
+ExprPtr Parser::parse_comparison_expression() {
+  ExprPtr left = parse_add_sub_expression();
 
   if (check("IN") || (check("NOT") && peek(1).value == "IN")) {
-    return parseInExpression(left);
+    return parse_in_expression(left);
   }
 
   if (check("BETWEEN") || (check("NOT") && peek(1).value == "BETWEEN")) {
-    return parseBetweenExpression(left);
+    return parse_between_expression(left);
   }
 
   if (match("IS")) {
@@ -497,7 +458,7 @@ ExprPtr Parser::parseComparisonExpression() {
   }
 
   if (match("LIKE")) {
-    ExprPtr pattern = parseAddSubExpression();
+    ExprPtr pattern = parse_add_sub_expression();
     return Expression::makeBinaryOp(BinaryOp::LIKE, left, pattern);
   }
 
@@ -518,24 +479,24 @@ ExprPtr Parser::parseComparisonExpression() {
     else if (op == ">=")
       bin_op = BinaryOp::GE;
     else
-      return left; // Not a comparison operator
+      return left;
 
     advance();
-    ExprPtr right = parseAddSubExpression();
+    ExprPtr right = parse_add_sub_expression();
     return Expression::makeBinaryOp(bin_op, left, right);
   }
 
   return left;
 }
 
-ExprPtr Parser::parseAddSubExpression() {
-  ExprPtr left = parseMulDivExpression();
+ExprPtr Parser::parse_add_sub_expression() {
+  ExprPtr left = parse_mul_div_expression();
 
   while (check(OPERATOR) && (current().value == "+" || current().value == "-" ||
                              current().value == "||")) {
     string op = current().value;
     advance();
-    ExprPtr right = parseMulDivExpression();
+    ExprPtr right = parse_mul_div_expression();
 
     BinaryOp bin_op;
     if (op == "+")
@@ -551,14 +512,14 @@ ExprPtr Parser::parseAddSubExpression() {
   return left;
 }
 
-ExprPtr Parser::parseMulDivExpression() {
-  ExprPtr left = parseUnaryExpression();
+ExprPtr Parser::parse_mul_div_expression() {
+  ExprPtr left = parse_unary_expression();
 
   while (check(OPERATOR) && (current().value == "*" || current().value == "/" ||
                              current().value == "%")) {
     string op = current().value;
     advance();
-    ExprPtr right = parseUnaryExpression();
+    ExprPtr right = parse_unary_expression();
 
     BinaryOp bin_op;
     if (op == "*")
@@ -574,40 +535,35 @@ ExprPtr Parser::parseMulDivExpression() {
   return left;
 }
 
-ExprPtr Parser::parseUnaryExpression() {
+ExprPtr Parser::parse_unary_expression() {
   if (check(OPERATOR) && (current().value == "-" || current().value == "+")) {
     string op = current().value;
     advance();
-    ExprPtr operand = parseUnaryExpression();
+    ExprPtr operand = parse_unary_expression();
     return Expression::makeUnaryOp(op == "-" ? UnaryOp::MINUS : UnaryOp::PLUS,
                                    operand);
   }
-  return parsePrimaryExpression();
+  return parse_primary_expression();
 }
 
-ExprPtr Parser::parsePrimaryExpression() {
-  // Parenthesized expression or subquery
+ExprPtr Parser::parse_primary_expression() {
   if (match("(")) {
     if (check("SELECT")) {
-      // Subquery
-      RANodePtr subquery = parseSelectStatement();
+      RANodePtr subquery = parse_select_statement();
       consume(")", "Expected ')' after subquery");
       auto expr = std::make_shared<Expression>();
       expr->type = ExprType::SUBQUERY;
-      // Note: we'd need to store the subquery somehow
       return expr;
     }
-    ExprPtr expr = parseExpression();
+    ExprPtr expr = parse_expression();
     consume(")", "Expected ')'");
     return expr;
   }
 
-  // NULL literal
   if (match("NULL")) {
     return Expression::makeLiteralNull();
   }
 
-  // Boolean literals
   if (match("TRUE")) {
     return Expression::makeLiteralBool(true);
   }
@@ -615,7 +571,6 @@ ExprPtr Parser::parsePrimaryExpression() {
     return Expression::makeLiteralBool(false);
   }
 
-  // Number literal
   if (check(NUMBER)) {
     string num = current().value;
     advance();
@@ -625,54 +580,49 @@ ExprPtr Parser::parsePrimaryExpression() {
     return Expression::makeLiteralInt(std::stoll(num));
   }
 
-  // String literal
   if (check(STRING)) {
     string str = current().value;
     advance();
     return Expression::makeLiteralString(str);
   }
 
-  // CASE expression
   if (check("CASE")) {
-    return parseCaseExpression();
+    return parse_case_expression();
   }
 
-  // EXISTS
   if (match("EXISTS")) {
     consume("(", "Expected '(' after EXISTS");
-    RANodePtr subquery = parseSelectStatement();
+    RANodePtr subquery = parse_select_statement();
     consume(")", "Expected ')' after subquery");
     auto expr = std::make_shared<Expression>();
     expr->type = ExprType::EXISTS;
     return expr;
   }
 
-  // Column reference or function call
-  return parseColumnOrFunction();
+  return parse_column_or_function();
 }
 
-ExprPtr Parser::parseCaseExpression() {
+ExprPtr Parser::parse_case_expression() {
   consume("CASE", "Expected CASE");
 
   auto expr = std::make_shared<Expression>();
   expr->type = ExprType::CASE_WHEN;
 
-  // Simple CASE or searched CASE
   ExprPtr case_operand = nullptr;
   if (!check("WHEN")) {
-    case_operand = parseExpression();
+    case_operand = parse_expression();
   }
 
   while (match("WHEN")) {
-    ExprPtr when_expr = parseExpression();
+    ExprPtr when_expr = parse_expression();
     consume("THEN", "Expected THEN");
-    ExprPtr then_expr = parseExpression();
+    ExprPtr then_expr = parse_expression();
     expr->children.push_back(when_expr);
     expr->children.push_back(then_expr);
   }
 
   if (match("ELSE")) {
-    ExprPtr else_expr = parseExpression();
+    ExprPtr else_expr = parse_expression();
     expr->children.push_back(else_expr);
   }
 
@@ -680,7 +630,7 @@ ExprPtr Parser::parseCaseExpression() {
   return expr;
 }
 
-ExprPtr Parser::parseColumnOrFunction() {
+ExprPtr Parser::parse_column_or_function() {
   if (!check(IDENTIFIER)) {
     throw std::runtime_error("Expected identifier, got '" + current().value +
                              "'");
@@ -690,7 +640,7 @@ ExprPtr Parser::parseColumnOrFunction() {
   advance();
 
   if (check("(")) {
-    return parseFunctionCall(first);
+    return parse_function_call(first);
   }
 
   if (match(".")) {
@@ -705,7 +655,7 @@ ExprPtr Parser::parseColumnOrFunction() {
   return Expression::makeColumnRef(first);
 }
 
-ExprPtr Parser::parseFunctionCall(const string &name) {
+ExprPtr Parser::parse_function_call(const string &name) {
   consume("(", "Expected '(' for function call");
 
   std::vector<ExprPtr> args;
@@ -717,7 +667,7 @@ ExprPtr Parser::parseFunctionCall(const string &name) {
     bool is_distinct = match("DISTINCT");
 
     do {
-      args.push_back(parseExpression());
+      args.push_back(parse_expression());
     } while (match(","));
 
     (void)is_distinct;
@@ -728,7 +678,7 @@ ExprPtr Parser::parseFunctionCall(const string &name) {
   return Expression::makeFunctionCall(name, std::move(args));
 }
 
-ExprPtr Parser::parseInExpression(ExprPtr left) {
+ExprPtr Parser::parse_in_expression(ExprPtr left) {
   bool is_not = match("NOT");
   consume("IN", "Expected IN");
   consume("(", "Expected '(' after IN");
@@ -738,13 +688,10 @@ ExprPtr Parser::parseInExpression(ExprPtr left) {
   expr->children.push_back(left);
 
   if (check("SELECT")) {
-    // Subquery
-    RANodePtr subquery = parseSelectStatement();
-    // Would need to handle subquery storage
+    RANodePtr subquery = parse_select_statement();
   } else {
-    // Value list
     do {
-      expr->in_list.push_back(parseExpression());
+      expr->in_list.push_back(parse_expression());
     } while (match(","));
   }
 
@@ -756,15 +703,14 @@ ExprPtr Parser::parseInExpression(ExprPtr left) {
   return expr;
 }
 
-ExprPtr Parser::parseBetweenExpression(ExprPtr left) {
+ExprPtr Parser::parse_between_expression(ExprPtr left) {
   bool is_not = match("NOT");
   consume("BETWEEN", "Expected BETWEEN");
 
-  ExprPtr low = parseAddSubExpression();
+  ExprPtr low = parse_add_sub_expression();
   consume("AND", "Expected AND in BETWEEN");
-  ExprPtr high = parseAddSubExpression();
+  ExprPtr high = parse_add_sub_expression();
 
-  // BETWEEN is equivalent to: left >= low AND left <= high
   auto ge = Expression::makeBinaryOp(BinaryOp::GE, left, low);
   auto le = Expression::makeBinaryOp(BinaryOp::LE, left, high);
   auto result = Expression::makeBinaryOp(BinaryOp::AND, ge, le);
@@ -775,19 +721,15 @@ ExprPtr Parser::parseBetweenExpression(ExprPtr left) {
   return result;
 }
 
-std::vector<ExprPtr> Parser::parseExpressionList() {
+std::vector<ExprPtr> Parser::parse_expression_list() {
   std::vector<ExprPtr> exprs;
   do {
-    exprs.push_back(parseExpression());
+    exprs.push_back(parse_expression());
   } while (match(","));
   return exprs;
 }
 
-// ============================================================================
-// INSERT Statement
-// ============================================================================
-
-RANodePtr Parser::parseInsertStatement() {
+RANodePtr Parser::parse_insert_statement() {
   consume("INSERT", "Expected INSERT");
   consume("INTO", "Expected INTO after INSERT");
 
@@ -796,7 +738,6 @@ RANodePtr Parser::parseInsertStatement() {
   auto node = std::make_shared<RANode>(RANodeType::INSERT_OP);
   node->table_name = table_name;
 
-  // Optional column list
   if (match("(")) {
     do {
       node->insert_columns.push_back(
@@ -806,19 +747,19 @@ RANodePtr Parser::parseInsertStatement() {
   }
 
   consume("VALUES", "Expected VALUES");
-  node->insert_values = parseValuesList();
+  node->insert_values = parse_values_list();
 
   return node;
 }
 
-std::vector<std::vector<ExprPtr>> Parser::parseValuesList() {
+std::vector<std::vector<ExprPtr>> Parser::parse_values_list() {
   std::vector<std::vector<ExprPtr>> rows;
 
   do {
     consume("(", "Expected '(' for VALUES");
     std::vector<ExprPtr> row;
     do {
-      row.push_back(parseExpression());
+      row.push_back(parse_expression());
     } while (match(","));
     consume(")", "Expected ')' after values");
     rows.push_back(std::move(row));
@@ -827,11 +768,7 @@ std::vector<std::vector<ExprPtr>> Parser::parseValuesList() {
   return rows;
 }
 
-// ============================================================================
-// UPDATE Statement
-// ============================================================================
-
-RANodePtr Parser::parseUpdateStatement() {
+RANodePtr Parser::parse_update_statement() {
   consume("UPDATE", "Expected UPDATE");
 
   string table_name = consume(IDENTIFIER, "Expected table name").value;
@@ -844,18 +781,18 @@ RANodePtr Parser::parseUpdateStatement() {
   do {
     string column = consume(IDENTIFIER, "Expected column name").value;
     consume("=", "Expected '=' in SET clause");
-    ExprPtr value = parseExpression();
+    ExprPtr value = parse_expression();
     node->update_assignments.push_back({column, value});
   } while (match(","));
 
   if (check("WHERE")) {
-    node->predicate = parseWhereClause();
+    node->predicate = parse_where_clause();
   }
 
   return node;
 }
 
-RANodePtr Parser::parseDeleteStatement() {
+RANodePtr Parser::parse_delete_statement() {
   consume("DELETE", "Expected DELETE");
   consume("FROM", "Expected FROM after DELETE");
 
@@ -865,13 +802,13 @@ RANodePtr Parser::parseDeleteStatement() {
   node->table_name = table_name;
 
   if (check("WHERE")) {
-    node->predicate = parseWhereClause();
+    node->predicate = parse_where_clause();
   }
 
   return node;
 }
 
-RANodePtr Parser::parseCreateTableStatement() {
+RANodePtr Parser::parse_create_table_statement() {
   consume("CREATE", "Expected CREATE");
   consume("TABLE", "Expected TABLE");
 
@@ -881,13 +818,13 @@ RANodePtr Parser::parseCreateTableStatement() {
   node->table_name = table_name;
 
   consume("(", "Expected '(' after table name");
-  node->column_defs = parseColumnDefinitions();
+  node->column_defs = parse_column_definitions();
   consume(")", "Expected ')' after column definitions");
 
   return node;
 }
 
-std::vector<ColumnDef> Parser::parseColumnDefinitions() {
+std::vector<ColumnDef> Parser::parse_column_definitions() {
   std::vector<ColumnDef> defs;
 
   do {
@@ -895,16 +832,13 @@ std::vector<ColumnDef> Parser::parseColumnDefinitions() {
     def.name = consume(IDENTIFIER, "Expected column name").value;
     def.type_name = consume(IDENTIFIER, "Expected type name").value;
 
-    // Optional type parameters like VARCHAR(255)
     if (match("(")) {
-      // Skip parameters for now
-      while (!check(")") && !isAtEnd()) {
+      while (!check(")") && !is_at_end()) {
         advance();
       }
       consume(")", "Expected ')' after type parameters");
     }
 
-    // Column constraints
     while (true) {
       if (match("NOT")) {
         consume("NULL", "Expected NULL after NOT");
@@ -916,11 +850,11 @@ std::vector<ColumnDef> Parser::parseColumnDefinitions() {
         def.primary_key = true;
         def.nullable = false;
       } else if (match("DEFAULT")) {
-        def.default_value = parseExpression();
+        def.default_value = parse_expression();
       } else if (match("UNIQUE")) {
       } else if (match("CHECK")) {
         consume("(", "Expected '(' after CHECK");
-        parseExpression(); // Discard for now
+        parse_expression();
         consume(")", "Expected ')' after CHECK expression");
       } else {
         break;
@@ -933,7 +867,7 @@ std::vector<ColumnDef> Parser::parseColumnDefinitions() {
   return defs;
 }
 
-RANodePtr Parser::parseDropTableStatement() {
+RANodePtr Parser::parse_drop_table_statement() {
   consume("DROP", "Expected DROP");
   consume("TABLE", "Expected TABLE");
 
@@ -948,11 +882,10 @@ void sql_query(SqlNode *root, std::vector<Token> &tokens,
   std::cout << "WARNING: Using legacy sql_query. Use parse_to_ra() instead.\n";
 }
 
-std::vector<SqlNode> create_SQL_AST(std::vector<Token> tokens) {
+std::vector<SqlNode> create_sql_ast(std::vector<Token> tokens) {
   std::vector<SqlNode> result;
   result.emplace_back(SqlNode("SELECT"));
 
-  // Try new parser and print RA tree
   try {
     Parser parser(tokens);
     RANodePtr ra = parser.parse();

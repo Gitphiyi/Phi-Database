@@ -28,7 +28,7 @@ std::vector<Token> tokenize_query(string &query) {
       continue;
     }
 
-    // Skip multi-line comments (/* */ style)
+    // Skip multi-line comments
     if (c == '/' && i + 1 < query.length() && query[i + 1] == '*') {
       i += 2;
       while (i + 1 < query.length() &&
@@ -39,7 +39,7 @@ std::vector<Token> tokenize_query(string &query) {
       continue;
     }
 
-    // Identifier/Keyword (can start with letter or underscore)
+    // Identifier/Keyword
     if (isalpha(c) || c == '_') {
       size_t start = i;
       while (i < query.length() && (isalnum(query[i]) || query[i] == '_')) {
