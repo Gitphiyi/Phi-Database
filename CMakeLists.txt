@@ -17,6 +17,7 @@ add_library( dblib STATIC
     src/storage-manager/ops/StorageOps.cpp
     src/storage-manager/ops/Selection.cpp
     src/storage-manager/HeapFile.cpp
+    src/storage-manager/BPlusTree.cpp
 
     src/query-executor/QueryExecutor.cpp
     # src/transaction-processor/TScheduler.cpp

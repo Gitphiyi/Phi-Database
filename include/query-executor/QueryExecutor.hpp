@@ -203,4 +203,25 @@ private:
     Row* combineRows(Row* left_row, Row* right_row);
 };
 
+class IndexScan : public StorageOps {
+public:
+    IndexScan(Table& table, int columnIndex, const datatype& key, size_t batch_size = 64);
+    IndexScan(Table& table, int columnIndex, const datatype& low, const datatype& high, size_t batch_size = 64);
+
+    void open() override;
+    std::vector<Row*> next() override;
+    void close() override;
+
+private:
+    Table& table_;
+    int columnIndex_;
+    datatype key_;
+    datatype lowKey_;
+    datatype highKey_;
+    bool isRangeScan_;
+    size_t batchSize_;
+    std::vector<RowId> matchingRowIds_;
+    size_t currentIdx_;
+};
+
 } // namespace DB

@@ -137,21 +137,17 @@ RANodePtr Parser::parseSelectStatement() {
     offset_count = offset;
   }
 
-  // Build the RA tree bottom-up
   RANodePtr result = from_node;
 
-  // Apply WHERE (σ - selection)
   if (where_predicate) {
     result = RANode::makeSelect(result, where_predicate);
   }
 
-  // Apply GROUP BY (γ - grouping)
   if (!group_by_exprs.empty()) {
     result = RANode::makeGroupBy(result, std::move(group_by_exprs),
                                  having_predicate);
   }
 
-  // Apply PROJECT (π - projection)
   auto project = std::make_shared<RANode>(RANodeType::PROJECT);
   project->left = result;
   project->select_all = select_info.select_all;
@@ -160,17 +156,14 @@ RANodePtr Parser::parseSelectStatement() {
   project->is_distinct = select_info.is_distinct;
   result = project;
 
-  // Apply DISTINCT if needed (and not already in project node)
   if (select_info.is_distinct) {
     result = RANode::makeDistinct(result);
   }
 
-  // Apply ORDER BY (τ - sort)
   if (!order_specs.empty()) {
     result = RANode::makeSort(result, std::move(order_specs));
   }
 
-  // Apply LIMIT/OFFSET
   if (limit_count >= 0 || offset_count > 0) {
     result = RANode::makeLimit(result, limit_count, offset_count);
   }
@@ -181,42 +174,35 @@ RANodePtr Parser::parseSelectStatement() {
 Parser::SelectInfo Parser::parseSelectClause() {
   SelectInfo info;
 
-  // Check for DISTINCT or ALL
   if (match("DISTINCT")) {
     info.is_distinct = true;
   } else if (match("ALL")) {
     info.is_distinct = false;
   }
 
-  // Check for SELECT *
   if (check("*") && (peek(1).value == "FROM" || peek(1).value == ",")) {
     if (match("*")) {
       info.select_all = true;
-      // Could have more columns after *
       if (!check("FROM") && match(",")) {
-        // Parse additional columns
       } else {
         return info;
       }
     }
   }
 
-  // Parse column list
   do {
     if (check("*")) {
       advance();
       info.select_all = true;
-      info.projections.push_back(nullptr); // Placeholder for *
+      info.projections.push_back(nullptr);
       info.aliases.push_back("");
     } else {
       ExprPtr expr = parseExpression();
       string alias;
 
-      // Check for AS alias
       if (match("AS")) {
         alias = consume(IDENTIFIER, "Expected alias after AS").value;
       } else if (check(IDENTIFIER) && !check("FROM") && !check(",")) {
-        // Implicit alias (without AS)
         alias = current().value;
         advance();
       }
@@ -238,7 +224,6 @@ RANodePtr Parser::parseFromClause() {
 
   RANodePtr result = parseTableReference();
 
-  // Parse JOINs
   while (check("JOIN") || check("INNER") || check("LEFT") || check("RIGHT") ||
          check("FULL") || check("CROSS") || check("NATURAL") || check(",")) {
     result = parseJoinClause(result);
@@ -248,14 +233,12 @@ RANodePtr Parser::parseFromClause() {
 }
 
 RANodePtr Parser::parseTableReference() {
-  // Check for subquery
   if (check("(")) {
-    advance(); // consume '('
+    advance();
     if (check("SELECT")) {
       RANodePtr subquery = parseSelectStatement();
       consume(")", "Expected ')' after subquery");
 
-      // Subqueries usually need an alias
       string alias;
       if (match("AS")) {
         alias = consume(IDENTIFIER, "Expected alias after AS").value;
@@ -264,7 +247,6 @@ RANodePtr Parser::parseTableReference() {
         advance();
       }
 
-      // Wrap in a rename node if alias provided
       if (!alias.empty()) {
         auto rename = std::make_shared<RANode>(RANodeType::RENAME);
         rename->left = subquery;
@@ -273,17 +255,14 @@ RANodePtr Parser::parseTableReference() {
       }
       return subquery;
     }
-    // Could be a parenthesized table reference
     RANodePtr inner = parseTableReference();
     consume(")", "Expected ')'");
     return inner;
   }
 
-  // Simple table reference
   string table_name = consume(IDENTIFIER, "Expected table name").value;
   string alias = table_name;
 
-  // Check for alias
   if (match("AS")) {
     alias = consume(IDENTIFIER, "Expected alias after AS").value;
   } else if (check(IDENTIFIER) && !check("JOIN") && !check("INNER") &&
@@ -302,13 +281,11 @@ RANodePtr Parser::parseJoinClause(RANodePtr left) {
   RANodeType join_type = RANodeType::INNER_JOIN;
   bool is_natural = false;
 
-  // Handle comma as cross join
   if (match(",")) {
     RANodePtr right = parseTableReference();
     return RANode::makeJoin(RANodeType::CROSS_PRODUCT, left, right, nullptr);
   }
 
-  // Determine join type
   if (match("NATURAL")) {
     is_natural = true;
   }
@@ -332,13 +309,11 @@ RANodePtr Parser::parseJoinClause(RANodePtr left) {
 
   RANodePtr right = parseTableReference();
 
-  // Parse ON condition (not for CROSS JOIN or NATURAL JOIN)
   ExprPtr condition = nullptr;
   if (join_type != RANodeType::CROSS_PRODUCT && !is_natural) {
     if (match("ON")) {
       condition = parseExpression();
     } else if (match("USING")) {
-      // USING (col1, col2, ...)
       consume("(", "Expected '(' after USING");
       std::vector<string> using_cols;
       do {
@@ -346,8 +321,6 @@ RANodePtr Parser::parseJoinClause(RANodePtr left) {
       } while (match(","));
       consume(")", "Expected ')' after USING columns");
 
-      // Convert USING to ON condition
-      // USING(a, b) => left.a = right.a AND left.b = right.b
       for (size_t i = 0; i < using_cols.size(); i++) {
         auto left_col = Expression::makeColumnRef(using_cols[i]);
         auto right_col = Expression::makeColumnRef(using_cols[i]);
@@ -508,17 +481,14 @@ ExprPtr Parser::parseNotExpression() {
 ExprPtr Parser::parseComparisonExpression() {
   ExprPtr left = parseAddSubExpression();
 
-  // Check for IN
   if (check("IN") || (check("NOT") && peek(1).value == "IN")) {
     return parseInExpression(left);
   }
 
-  // Check for BETWEEN
   if (check("BETWEEN") || (check("NOT") && peek(1).value == "BETWEEN")) {
     return parseBetweenExpression(left);
   }
 
-  // Check for IS NULL / IS NOT NULL
   if (match("IS")) {
     bool is_not = match("NOT");
     consume("NULL", "Expected NULL after IS");
@@ -526,13 +496,11 @@ ExprPtr Parser::parseComparisonExpression() {
         is_not ? UnaryOp::IS_NOT_NULL : UnaryOp::IS_NULL, left);
   }
 
-  // Check for LIKE
   if (match("LIKE")) {
     ExprPtr pattern = parseAddSubExpression();
     return Expression::makeBinaryOp(BinaryOp::LIKE, left, pattern);
   }
 
-  // Regular comparison operators
   if (check(OPERATOR)) {
     string op = current().value;
     BinaryOp bin_op;
@@ -721,14 +689,11 @@ ExprPtr Parser::parseColumnOrFunction() {
   string first = current().value;
   advance();
 
-  // Check for function call
   if (check("(")) {
     return parseFunctionCall(first);
   }
 
-  // Check for table.column
   if (match(".")) {
-    // Handle special case of table.*
     if (match("*")) {
       auto expr = Expression::makeColumnRef("*", first);
       return expr;
@@ -737,7 +702,6 @@ ExprPtr Parser::parseColumnOrFunction() {
     return Expression::makeColumnRef(column, first);
   }
 
-  // Just a column name
   return Expression::makeColumnRef(first);
 }
 
@@ -746,22 +710,17 @@ ExprPtr Parser::parseFunctionCall(const string &name) {
 
   std::vector<ExprPtr> args;
 
-  // Handle COUNT(*) specially
   if (name == "COUNT" && check("*")) {
     advance();
     args.push_back(Expression::makeColumnRef("*"));
   } else if (!check(")")) {
-    // Check for DISTINCT in aggregate functions
     bool is_distinct = match("DISTINCT");
 
     do {
       args.push_back(parseExpression());
     } while (match(","));
 
-    if (is_distinct && !args.empty()) {
-      // Mark the first arg as distinct somehow
-      // This is a simplification
-    }
+    (void)is_distinct;
   }
 
   consume(")", "Expected ')' after function arguments");
@@ -882,7 +841,6 @@ RANodePtr Parser::parseUpdateStatement() {
 
   consume("SET", "Expected SET");
 
-  // Parse assignments
   do {
     string column = consume(IDENTIFIER, "Expected column name").value;
     consume("=", "Expected '=' in SET clause");
@@ -890,17 +848,12 @@ RANodePtr Parser::parseUpdateStatement() {
     node->update_assignments.push_back({column, value});
   } while (match(","));
 
-  // Optional WHERE clause
   if (check("WHERE")) {
     node->predicate = parseWhereClause();
   }
 
   return node;
 }
-
-// ============================================================================
-// DELETE Statement
-// ============================================================================
 
 RANodePtr Parser::parseDeleteStatement() {
   consume("DELETE", "Expected DELETE");
@@ -911,17 +864,12 @@ RANodePtr Parser::parseDeleteStatement() {
   auto node = std::make_shared<RANode>(RANodeType::DELETE_OP);
   node->table_name = table_name;
 
-  // Optional WHERE clause
   if (check("WHERE")) {
     node->predicate = parseWhereClause();
   }
 
   return node;
 }
-
-// ============================================================================
-// CREATE TABLE Statement
-// ============================================================================
 
 RANodePtr Parser::parseCreateTableStatement() {
   consume("CREATE", "Expected CREATE");
@@ -970,7 +918,6 @@ std::vector<ColumnDef> Parser::parseColumnDefinitions() {
       } else if (match("DEFAULT")) {
         def.default_value = parseExpression();
       } else if (match("UNIQUE")) {
-        // Handle unique constraint
       } else if (match("CHECK")) {
         consume("(", "Expected '(' after CHECK");
         parseExpression(); // Discard for now
@@ -986,10 +933,6 @@ std::vector<ColumnDef> Parser::parseColumnDefinitions() {
   return defs;
 }
 
-// ============================================================================
-// DROP TABLE Statement
-// ============================================================================
-
 RANodePtr Parser::parseDropTableStatement() {
   consume("DROP", "Expected DROP");
   consume("TABLE", "Expected TABLE");
@@ -1000,18 +943,12 @@ RANodePtr Parser::parseDropTableStatement() {
   return node;
 }
 
-// ============================================================================
-// Legacy API Implementation
-// ============================================================================
-
 void sql_query(SqlNode *root, std::vector<Token> &tokens,
                std::vector<string> &aliases, int st) {
-  // Legacy implementation - kept for compatibility but deprecated
   std::cout << "WARNING: Using legacy sql_query. Use parse_to_ra() instead.\n";
 }
 
 std::vector<SqlNode> create_SQL_AST(std::vector<Token> tokens) {
-  // Legacy implementation - kept for compatibility
   std::vector<SqlNode> result;
   result.emplace_back(SqlNode("SELECT"));
 

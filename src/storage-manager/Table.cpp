@@ -32,7 +32,23 @@ namespace DB {
         return rid;
     }
 
+    RowId Table::insert_row(Row* row) {
+        RowId rid = insert_row();
+
+        for (auto& [colIdx, index] : theIndexes) {
+            if (colIdx < static_cast<int>(row->values.size())) {
+                index->insert(row->values[colIdx], rid);
+            }
+        }
+
+        return rid;
+    }
+
     Row* Table::read_row() {
+        return nullptr;
+    }
+
+    Row* Table::read_row(const RowId& rid) {
         return nullptr;
     }
 
@@ -51,6 +67,51 @@ namespace DB {
 
     Schema* Table::get_record(int rid) {
         return nullptr;
+    }
+
+    void Table::createIndex(const string& indexName, int columnIndex) {
+        if (theIndexes.find(columnIndex) != theIndexes.end()) {
+            return;
+        }
+        auto index = std::make_unique<Index>(indexName, theFileName, columnIndex);
+        theIndexes[columnIndex] = std::move(index);
+    }
+
+    void Table::dropIndex(const string& indexName) {
+        for (auto it = theIndexes.begin(); it != theIndexes.end(); ++it) {
+            if (it->second->getName() == indexName) {
+                theIndexes.erase(it);
+                return;
+            }
+        }
+    }
+
+    bool Table::hasIndex(int columnIndex) const {
+        return theIndexes.find(columnIndex) != theIndexes.end();
+    }
+
+    Index* Table::getIndex(int columnIndex) {
+        auto it = theIndexes.find(columnIndex);
+        if (it != theIndexes.end()) {
+            return it->second.get();
+        }
+        return nullptr;
+    }
+
+    std::vector<RowId> Table::indexLookup(int columnIndex, const datatype& key) {
+        auto* index = getIndex(columnIndex);
+        if (!index) {
+            return {};
+        }
+        return index->lookupAll(key);
+    }
+
+    std::vector<RowId> Table::indexRangeLookup(int columnIndex, const datatype& low, const datatype& high) {
+        auto* index = getIndex(columnIndex);
+        if (!index) {
+            return {};
+        }
+        return index->rangeLookup(low, high);
     }
 }
 

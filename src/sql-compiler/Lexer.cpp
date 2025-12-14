@@ -54,13 +54,11 @@ std::vector<Token> tokenize_query(string &query) {
       continue;
     }
 
-    // Numbers (integers and decimals)
     if (isdigit(c)) {
       size_t start = i;
       while (i < query.length() && isdigit(query[i])) {
         i++;
       }
-      // Check for decimal part
       if (i < query.length() && query[i] == '.') {
         i++;
         while (i < query.length() && isdigit(query[i])) {
@@ -71,13 +69,11 @@ std::vector<Token> tokenize_query(string &query) {
       continue;
     }
 
-    // String literal
     if (c == '\'') {
       i++;
       string str_val;
       while (i < query.size()) {
         if (query[i] == '\'' && i + 1 < query.size() && query[i + 1] == '\'') {
-          // Escaped quote
           str_val += '\'';
           i += 2;
         } else if (query[i] == '\'') {
@@ -89,11 +85,10 @@ std::vector<Token> tokenize_query(string &query) {
       }
       tokens.push_back(Token{STRING, str_val});
       if (i < query.size())
-        i++; // Skip closing quote
+        i++;
       continue;
     }
 
-    // Double-quoted identifiers
     if (c == '"') {
       i++;
       size_t start = i;
@@ -102,11 +97,10 @@ std::vector<Token> tokenize_query(string &query) {
       }
       tokens.push_back(Token{IDENTIFIER, query.substr(start, i - start)});
       if (i < query.size())
-        i++; // Skip closing quote
+        i++;
       continue;
     }
 
-    // Multi-character operators
     if (i + 1 < query.length()) {
       string two_char = query.substr(i, 2);
       if (two_char == "<>" || two_char == "<=" || two_char == ">=" ||
