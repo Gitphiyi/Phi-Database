@@ -87,60 +87,11 @@ enum class RANodeType {
 
 ### 3.2 Storage Manager
 
-#### Heap Files
-
-Storage uses heap file organization with page directories:
-
-```cpp
-struct HeapFile_Metadata {
-    string  identifier;
-    u64     heap_id;
-    u64     table_id;
-    u64     num_pages;
-    u64     num_records;
-    u8      next_heapfile;
-} __attribute__((packed));
-```
-
-Page 0 contains metadata, schema, and the page directory.
-
-#### Pages
-
-Fixed-size pages (128 bytes default for testing):
-
-```cpp
-struct Page {
-    bool    valid_bit;
-    bool    dirty_bit;
-    u16     ref_count;
-    u32     id;
-    u32     used_bytes;
-    byte*   data[PAGE_DATA_SIZE];
-};
-```
-
-#### Table Operations
-
-The Table class handles row-level operations:
-- insert_row() - adds records to the heap file
-- read_row() - retrieves records by RowId
-- scan() - sequential scan returning all rows
-- Schema management with column types (INT, FLOAT, STRING, BOOL)
-
-#### Rows
-
-```cpp
-using datatype = std::variant<int, float, string, bool, int64_t, double>;
-
-struct Row {
-    u8                      numCols;
-    std::vector<datatype>   values;
-};
-```
+The two building blocks I stored things in my database were heap files and pages. Every heap file contained a fix number of pages and each page was a set amount of data which I set to 128 bytes as default for testing and scaled higher for rows and such. This is obviously an obscenely small amount of bytes to set a page, but conceptually it served its purpose. The way it would work is that the table had insert and read row operations that served as the basic operations of read and write that every storage op needs. These then work on top of the HeapFile to basically determine where the data actually is to read it or concatenate on top of the existing HeapFiles with rows to allow future reads find it. The heapfiles each had a small metadata header where it would keep track of how many records are currently in the file and a pointer to the heapfile when the table is larger than the size of a heapfile. I realized late that this wasn't very IO optimal as if data was in one of the last heapfiles then I would sequentially have to do that many IOs to get to it. In addition, I would then have to do the additional IO to actually pull the page from disk into memory. At the time, I believed that I could heavily rely on the Page Cache to reduce the IOs made, but looking back on hindsight, this assumption was not true.
 
 ### 3.3 Query Executor
 
-Uses the Volcano iterator model with batching:
+This essentially acted as a Generator function in python. Through some basic research, I decided to just use the Volcano iterator model as it is the most common iterator model, and it basically runs through the RA tree applying operations in a sort of functional paradigm. I implemented the basic operations like SeqScan, IndexScan, FilterOp, ProjectOp, LimitOp, CrossProductOp, NestedLoopJoin.
 
 ```cpp
 struct StorageOps {
@@ -150,11 +101,9 @@ struct StorageOps {
 };
 ```
 
-Implemented operators: SeqScan, IndexScan, FilterOp, ProjectOp, LimitOp, CrossProductOp, NestedLoopJoin.
-
 ### 3.4 Page Manager
 
-DbFile is a singleton that manages all file descriptors. It handles:
+When I was designing the DbFile is a singleton that manages all file descriptors. It handles:
 - read_at() / write_at() for positioned I/O
 - File path management with automatic directory creation
 - Locking support (shared/exclusive modes)
@@ -166,9 +115,9 @@ PageCache does LRU-style caching with:
 
 ### 3.5 Transaction Processing
 
-#### Transaction Scheduler (TScheduler)
+#### Transaction Scheduler
 
-The scheduler handles operation ordering for transactions:
+The scheduler ended up being very bare bones. It was a simple 2PL locking system that I learned from the CS316 lecture. I did not want to overcomplicate this part especially since when I was testing it would be on single queries. I didn't have much trouble in this section as the algorithm of 2PL locking is very well defined, but this scheduler could definitely be much more refined.
 
 ```cpp
 void TScheduler::schedule_transaction() {
@@ -181,71 +130,6 @@ void TScheduler::schedule_transaction() {
 
 Operations are partitioned by which table they modify, then lock/unlock pairs are inserted to ensure serializability.
 
-#### Transaction Logger (TLogger)
-
-The logger maintains an operation log for recovery:
-
-```cpp
-class TLogger {
-    void add_ops(std::vector<Operation>& operations);
-    void flush_ops();  // Execute logged operations
-    void clear_ops();  // Clear after commit
-};
-```
-
-The logger queues operations and flushes them through the page cache. This enables undo/redo recovery by replaying the log.
-
-### 3.6 Indexing
-
-The storage layer supports B+ tree indexes for efficient key-based lookups:
-
-```cpp
-class BPlusTree {
-public:
-    void insert(const datatype& key, const RowId& rid);
-    bool remove(const datatype& key);
-    std::optional<RowId> search(const datatype& key) const;
-    std::vector<RowId> rangeSearch(const datatype& low, const datatype& high) const;
-};
-```
-
-The B+ tree uses a configurable order (default 4) and supports:
-- Point lookups returning a single RowId
-- Range scans for queries like `WHERE x BETWEEN a AND b`
-- Duplicate key handling for non-unique indexes
-
-The Index class wraps BPlusTree and associates it with a table column:
-
-```cpp
-class Index {
-    void insert(const datatype& key, const RowId& rid);
-    std::optional<RowId> lookup(const datatype& key) const;
-    std::vector<RowId> rangeLookup(const datatype& low, const datatype& high) const;
-};
-```
-
-Tables can create indexes on any column. When an index exists, the query executor can use IndexScan instead of SeqScan for equality and range predicates.
-
-## 4. Design Tradeoffs
-
-### Performance vs Simplicity
-
-- Chose heap files over more complex storage (like slotted pages) for simplicity
-- Batch size of 64 rows balances memory usage with cache efficiency
-- Left-deep join trees are suboptimal but simpler to implement than bushy trees
-
-### Correctness vs Performance
-
-- Address Sanitizer enabled for all builds catches memory bugs but adds overhead
-- Write-through caching is slower than write-back but simpler to reason about for durability
-- Strict two-phase locking in the scheduler ensures serializability but limits concurrency
-
-### Scalability Considerations
-
-- Singleton DbFile centralizes file management but could become a bottleneck
-- Page cache size is fixed at startup
-- No support for distributed queries (single-node only)
-
 ## 5. Problems I Ran Into
 
 ### 5.1 Bazel to CMake
@@ -254,42 +138,30 @@ Started with Bazel because I thought it would be cool. It wasn't. The biggest is
 
 Bazel also has a steep learning curve with its BUILD files and dependency management. Way too complex for what I needed. Switched to CMake and everything got simpler - I could just build and run, then inspect the output files directly.
 
-### 5.2 Parser Burnout
+### 5.2 Table vs HeapFile
 
-SQL grammar is brutal. Nested subqueries, all the join types, getting expression precedence right. I hit a wall and had to step away.
+This was a weird system design issue I had where I didn't know how to bridge the gape between the notion of a Table and the Page Cache. While it seems like an easy design choice, the table should not work on pages at all and simply make requests to read or write. This abstracts the notion of tables being multiple pages large where the heapfile can operate on all of that making the entire implementation a lot cleaner. 
 
-Ended up working on heap files for a while, then came back to the parser with fresh eyes. That actually helped a lot. The final parser handles all join types, subqueries, BETWEEN/IN/LIKE/CASE expressions, and aggregates with GROUP BY/HAVING.
+### 5.3 Struct Alignment
 
-### 5.3 Struct Alignment Hell
+A big issue I grappled with structs is that structs are padded by the compiler to align with the memory line. This is especially finnicky because when I went to read the files I would see random bytes that I did not specify from the struct, and thus I would be very confused where they come from. I didn't realize that to actually keep a struct the way it was you needed to write __attribute__ before it to signal to Clang that it can keep it the way it is.
 
-Spent way too long on this.
+### 5.4 Pre Optimizations
 
-Tried to serialize HeapFile_Metadata with memcpy. Doesn't work when you have std::string in the struct - the packed attribute gets ignored for non-POD types.
+Probably the most important thing i learned working on this project was the dangers of pre optimizations. I really never learned how slow programming could be until I started worrying about all the small things before the big system could even be built. A big example of this was when I was building page cache. I really really over thought about it at first to make sure that every page was clearly in memory and I was using the minimum number of IOs as possible when in reality it all was going to change since my entire project structure changed. My intended approach was to go bottom up because I thought the top would simply be easy to interface, but waht I realized was that I had to keep changing the things I already built to accomadate the inputs that were being fed to it. This essentially made all the optimizations I did useless as I had to delete my work and redo it. This was in fact the biggest lesson I learned in that I need to get a MVP working product out before I think about any optimizations.
 
-Had to do manual serialization:
+### 5.5 Build Management
 
-```cpp
-inline u8* to_bytes(HeapFile_Metadata* metadata) {
-    u8* buffer = new u8[metadata->size];
-    size_t offset = 0;
-    std::memcpy(buffer + offset, metadata->identifier.data(), ...);
-}
-```
+At first I used Bazel as my build system as a lot of my friends recommended it to me from their experience. To be honest, it was a very nice system to use and built very quickly, but an issue I had was that Bazel's sandboxed execution model made it impossible to check the created files I made were correct. When I was working on DbFiles and wanted to ensure the test bytes I wrote were exactly what I wrote, I spent around 2-3 days wondering where the file was actually stored. I realized too late that it was actually in a random sandboxed folder I couldn't really access and this was the intended implementation of Bazel. Coming from using basic MakeFiles this was a big surprise, so I ended up making the switch to CMake just to be able to easily test file writes and know where my built executables were.
 
-### 5.4 Join Ordering
+### 5.6 Memory Management Bugs
 
-When you have `FROM a JOIN b ON ... JOIN c ON ...`, what order do you evaluate that? Went with left-to-right, building a left-deep tree. Good enough for now, bushy trees can come later.
+Working on memory bugs after using garbage collection was a bit of a change. I heavily relied on Address Sanitizer to catch cases where I forgot to malloc and as the size of the repo grew I had to structure the codebase well so I could hunt down memory leaks easily. I really wanted to follow a more C like structure coding style and avoided using smart pointers which would have made this problem a LOT easier.
 
-### 5.5 Integration
+### 5.7 POSIX IO issues
 
-Built the compiler and storage manager separately. When I tried to connect them, everything broke:
+There were a couple issues about POSIX API that I did not realize and tripped me up. The first one is the on write() the returned number of bytes can be LESS than the requested number of bytes to write. This definitely was not something I expected, as usually in these cases I would think the writes would simply fail. This caused a really frustrating bug where there were non deterministic writes that did not fully write all the bytes into a file and when I checked the bytes were not what I requested. This is because when I checked my writes I was not actually checking to see if it wrote all of them correctly and just checking that it did not write no bytes at all.
 
-- Missing includes everywhere
-- Had both `struct Table` and `class Table` defined
-- Empty function implementations I forgot about
-- std::format doesn't exist in GCC 11
-
-Created the Query Executor to bridge everything. Should have defined interfaces earlier.
 
 ## 6. Results
 
@@ -308,29 +180,7 @@ ORDER BY emp_count DESC LIMIT 10
 
 Operators return batches of 64 rows for cache efficiency. All disk access goes through fixed-size pages. AddressSanitizer is on for all builds.
 
-## 7. Problems and Issues
-
-### Pre Optimizations
-
-Probably the most important thing i learned working on this project was the dangers of pre optimizations. I really never learned how slow programming could be until I started worrying about all the small things before the big system could even be built. A big example of this was when I was building page cache. I really really over thought about it at first to make sure that every page was clearly in memory and I was using the minimum number of IOs as possible when in reality it all was going to change since my entire project structure changed. My intended approach was to go bottom up because I thought the top would simply be easy to interface, but waht I realized was that I had to keep changing the things I already built to accomadate the inputs that were being fed to it. This essentially made all the optimizations I did useless as I had to delete my work and redo it. This was in fact the biggest lesson I learned in that I need to get a MVP working product out before I think about any optimizations.
-
-### Build Management
-
-At first I used Bazel as my build system as a lot of my friends recommended it to me from their experience. To be honest, it was a very nice system to use and built very quickly, but an issue I had was that Bazel's sandboxed execution model made it impossible to check the created files I made were correct. When I was working on DbFiles and wanted to ensure the test bytes I wrote were exactly what I wrote, I spent around 2-3 days wondering where the file was actually stored. I realized too late that it was actually in a random sandboxed folder I couldn't really access and this was the intended implementation of Bazel. Coming from using basic MakeFiles this was a big surprise, so I ended up making the switch to CMake just to be able to easily test file writes and know where my built executables were.
-
-### Memory Management Bugs
-
-Working on memory bugs after using garbage collection was a bit of a change. I heavily relied on Address Sanitizer to catch cases where I forgot to malloc and as the size of the repo grew I had to structure the codebase well so I could hunt down memory leaks easily. I really wanted to follow a more C like structure coding style and avoided using smart pointers which would have made this problem a LOT easier.
-
-### Cross-Component Type Conflicts
-
-Building the compiler and storage manager in isolation led to duplicate type definitions. I had `struct Table` in the parser for AST nodes and `class Table` in storage for actual table operations. The linker errors were cryptic. Lesson learned: define shared interfaces early.
-
-### File I/O Edge Cases
-
-Reading Linux manpages for `pread`/`pwrite` revealed subtleties I hadn't considered - partial reads, signal interruptions, file descriptor limits. The DbFile class went through several iterations to handle these correctly.
-
-## 8. What I Learned
+## 7. What I Learned
 
 ### Technical
 
